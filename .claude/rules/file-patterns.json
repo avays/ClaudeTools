@@ -1,0 +1,20 @@
+{
+  "agent-skills": "packages/backend/src/core/ai/skills/**/*.ts,packages/backend/src/core/ai/tool-catalog/**/*.ts,packages/backend/src/domains/llm-composites/**/*.ts",
+  "architecture-principles": "**",
+  "approval-lifecycle": "packages/backend/src/domains/approval/**/*.ts,packages/frontend/src/components/admin/Approval*.{ts,tsx},packages/frontend/src/components/admin/ConvertQueueToGroupButton.tsx,packages/frontend/src/components/record/ApprovalActions.tsx,packages/frontend/src/hooks/useApproval*.ts,packages/frontend/src/hooks/usePendingApprovals.ts,packages/ui/src/components/Approver*/**,packages/ui/src/components/ApprovalTimeline/**,packages/ui/src/components/ApprovalStatusBadge/**",
+  "backend-api": "packages/backend/src/domains/**/*.routes.ts",
+  "backend-database": "packages/backend/src/domains/**/*.repository.ts,packages/backend/src/core/db.ts,packages/backend/migrations/*.sql",
+  "backend-general": "packages/backend/src/**/*.ts",
+  "delete-lifecycle": "packages/backend/src/domains/**/*.repository.ts,packages/backend/src/domains/**/*.service.ts,packages/backend/src/domains/**/*.routes.ts",
+  "frontend-components": "packages/ui/src/**/*.{ts,tsx},packages/frontend/src/components/**/*.{ts,tsx}",
+  "integration-adapters": "packages/backend/src/domains/**/providers/*-provider.ts,packages/backend/src/domains/**/providers/*-adapter.ts,packages/shared/src/constants/integrations.ts",
+  "frontend": "packages/frontend/src/**/*.{ts,tsx}",
+  "migrations": "packages/backend/migrations/*.sql",
+  "railway": ".github/workflows/*.yml,packages/*/Dockerfile*,railway.json",
+  "registry": "packages/backend/src/**/registry.ts,packages/backend/src/**/*.registry.ts,packages/backend/src/**/definitions/**",
+  "response-conventions": "**",
+  "security-scanning": ".github/workflows/security.yml,.github/dependabot.yml,.trivyignore,.gitleaks.toml,osv-scanner.toml,.hadolint.yaml,.semgrepignore",
+  "shared-types": "packages/shared/src/**/*.ts",
+  "testing": "**/*.test.ts,**/*.test.tsx",
+  "workflow": "**"
+}

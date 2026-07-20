@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @orm/backend typecheck)",
+      "Bash(pnpm --filter @orm/frontend typecheck)",
+      "Bash(pnpm --filter @orm/e2e typecheck)",
+      "Bash(pnpm -r typecheck)"
+    ]
+  }
+}
