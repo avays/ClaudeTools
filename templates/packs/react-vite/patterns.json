@@ -1,0 +1,4 @@
+{
+  "frontend": "{{PATHS_SRC_GLOBS}}/**/*.tsx,{{PATHS_SRC_GLOBS}}/**/*.ts",
+  "frontend-components": "{{PATHS_SRC_GLOBS}}/**/components/**/*.tsx"
+}

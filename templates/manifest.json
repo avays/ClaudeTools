@@ -1,0 +1,455 @@
+{
+  "_comment": "Classification of every upstream file. `ct extract` reads this to know where a file goes and how much liberty to take; it FAILS on an upstream file absent from this manifest, so new upstream content must be classified deliberately rather than silently skipped. portability: verbatim = copy + token substitution only; light = substitution plus small prose edits; rewrite = needs human editorial work, extract stages it under .staged/ instead of overwriting; excluded = never ported (reason required).",
+  "tiers": {
+    "core": "Tool- and stack-agnostic. Always installed. Process, review discipline, and the rule-governance system.",
+    "pack:node-ts": "Node + TypeScript projects: service/error conventions, Zod-first shared types, vitest hygiene.",
+    "pack:fastify-kysely-pg": "Fastify + Kysely + Postgres + RLS multi-tenancy.",
+    "pack:sql-migrations": "Numbered SQL migration files applied at boot.",
+    "pack:react-vite": "React + Vite + Tailwind frontends with a shared component library.",
+    "pack:llm-tool-catalog": "Platforms that expose their own REST routes as LLM tools and register primitives.",
+    "pack:security-scanning": "CI security scanning (SCA/SAST/secret/container).",
+    "pack:railway": "Railway deployment.",
+    "pack:docs-site": "A Docusaurus-style docs site kept in sync with code."
+  },
+  "sources": {
+    ".claude/rules/workflow.md": {
+      "tier": "core",
+      "dest": "core/rules/workflow.md",
+      "portability": "rewrite",
+      "coupling": 7,
+      "notes": "The spine: issue -> spec -> implement -> self-audit loop, agent locking, sibling sweep, completeness traps. Tracker/VCS commands tokenize cleanly. The 'Completeness traps' section is ~60% ORM-specific chain examples (metadata bundle entity types, BullMQ queues, config.ts env vars) \u2014 those move to docs/examples/completeness-chains-orm.md and the section keeps the GENERAL rule plus a short worked example, because the rule without an example loses its teeth."
+    },
+    ".claude/rules/response-conventions.md": {
+      "tier": "core",
+      "dest": "core/rules/response-conventions.md",
+      "portability": "verbatim",
+      "coupling": 1,
+      "notes": "Single convention (end-of-response PR link). Only the repo URL tokenizes."
+    },
+    ".claude/rules/testing.md": {
+      "tier": "core",
+      "dest": "core/rules/testing-discipline.md",
+      "portability": "rewrite",
+      "coupling": 6,
+      "splitTo": [
+        "pack:node-ts/rules/testing-vitest.md"
+      ],
+      "notes": "SPLIT. Core keeps the framework-independent discipline: 'Root cause over band-aid' and its five anti-patterns, the delete-the-fix heuristic, vacuous-assertion classes (single-element ordering fixtures, explicit-option-equals-default, unverified async-ordering claims), idempotency/dedup race testing, source-scanning tripwires must strip comments. pack:node-ts keeps vitest hygiene (spy restore, env-var delete-not-reassign, partial library mocks), BullMQ jobId colon-safety, jsdom pointer-capture, react-i18next mock shape."
+    },
+    ".claude/rules/architecture-principles.md": {
+      "tier": "pack:llm-tool-catalog",
+      "dest": "packs/llm-tool-catalog/rules/architecture-principles.md",
+      "portability": "verbatim",
+      "coupling": 0,
+      "notes": "Zero upstream references \u2014 but it is product PHILOSOPHY (the maximalist dynamic posture, ten decision rules about registries and LLM-callable behaviours), not process. A repo not building an LLM-composable platform should not inherit it. Core skills that reference it (create-spec, audit-phase) do so inside a pack-conditional block."
+    },
+    ".claude/rules/agent-skills.md": {
+      "tier": "pack:llm-tool-catalog",
+      "dest": "packs/llm-tool-catalog/rules/agent-skills.md",
+      "portability": "light",
+      "coupling": 11
+    },
+    ".claude/rules/registry.md": {
+      "tier": "pack:llm-tool-catalog",
+      "dest": "packs/llm-tool-catalog/rules/registry.md",
+      "portability": "light",
+      "coupling": 10
+    },
+    ".claude/rules/backend-general.md": {
+      "tier": "pack:node-ts",
+      "dest": "packs/node-ts/rules/backend-general.md",
+      "portability": "light",
+      "coupling": 11,
+      "notes": "Largest file (44 KB). Much of it IS portable (provenance columns at INSERT, partial-update preserve-on-absence sweeps, key-normalisation collision guards, derived-status recompute gating, fail-closed quota ledgers, dispatch tables via Map). Kysely/Fastify specifics stay because the pack declares that stack."
+    },
+    ".claude/rules/shared-types.md": {
+      "tier": "pack:node-ts",
+      "dest": "packs/node-ts/rules/shared-types.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/rules/backend-api.md": {
+      "tier": "pack:fastify-kysely-pg",
+      "dest": "packs/fastify-kysely-pg/rules/backend-api.md",
+      "portability": "light",
+      "coupling": 10
+    },
+    ".claude/rules/backend-database.md": {
+      "tier": "pack:fastify-kysely-pg",
+      "dest": "packs/fastify-kysely-pg/rules/backend-database.md",
+      "portability": "light",
+      "coupling": 7
+    },
+    ".claude/rules/delete-lifecycle.md": {
+      "tier": "pack:fastify-kysely-pg",
+      "dest": "packs/fastify-kysely-pg/rules/delete-lifecycle.md",
+      "portability": "light",
+      "coupling": 2
+    },
+    ".claude/rules/integration-adapters.md": {
+      "tier": "pack:fastify-kysely-pg",
+      "dest": "packs/fastify-kysely-pg/rules/integration-adapters.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/rules/migrations.md": {
+      "tier": "pack:sql-migrations",
+      "dest": "packs/sql-migrations/rules/migrations.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/rules/frontend.md": {
+      "tier": "pack:react-vite",
+      "dest": "packs/react-vite/rules/frontend.md",
+      "portability": "light",
+      "coupling": 15
+    },
+    ".claude/rules/frontend-components.md": {
+      "tier": "pack:react-vite",
+      "dest": "packs/react-vite/rules/frontend-components.md",
+      "portability": "light",
+      "coupling": 23,
+      "notes": "Highest coupling of any rule (46 KB, 23 refs) but the highest density of hard-won correctness patterns (re-entrancy latches, focus handoff on unmount, containment stacking contexts, i18n fallbacks). Ported as-is into the pack rather than genericised \u2014 a React shop wants the specifics."
+    },
+    ".claude/rules/security-scanning.md": {
+      "tier": "pack:security-scanning",
+      "dest": "packs/security-scanning/rules/security-scanning.md",
+      "portability": "light",
+      "coupling": 2
+    },
+    ".claude/rules/railway.md": {
+      "tier": "pack:railway",
+      "dest": "packs/railway/rules/railway.md",
+      "portability": "rewrite",
+      "coupling": 10,
+      "notes": "Mostly an env-var reference for one specific deployment. Ported as a WORKED EXAMPLE of the pattern (boot-gated vars documented per-service, both-processes checklist) with ORM's service names intact and a header saying so."
+    },
+    ".claude/rules/approval-lifecycle.md": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "coupling": 2,
+      "reason": "A single product domain's state machine (approval processes). No portable rule survives genericisation \u2014 the value is entirely in the domain specifics."
+    },
+    ".claude/rules/file-patterns.json": {
+      "tier": "core",
+      "dest": "core/rules/file-patterns.json",
+      "portability": "rewrite",
+      "coupling": 0,
+      "notes": "Regenerated at render from the installed rule set rather than copied \u2014 the glob values are upstream paths."
+    },
+    ".claude/rules/rule-budgets.json": {
+      "tier": "core",
+      "dest": "GENERATED",
+      "portability": "excluded",
+      "reason": "Byte caps must be RECOMPUTED from rendered output (+15%), never copied \u2014 rendering placeholders changes byte counts. ct render generates it."
+    },
+    ".claude/rules/.frozen-headings.txt": {
+      "tier": "core",
+      "dest": "GENERATED",
+      "portability": "excluded",
+      "reason": "Generated in the target repo by build-frozen-headings.sh after render; its entries depend on which packs are installed and on the target's own source corpus."
+    },
+    ".claude/skills/create-spec/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/create-spec/SKILL.md",
+      "portability": "rewrite",
+      "coupling": 36
+    },
+    ".claude/skills/audit-phase/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/audit-phase/SKILL.md",
+      "portability": "rewrite",
+      "coupling": 50,
+      "notes": "Highest-coupling skill. Its greppable checks are written against upstream paths; they become {{PATHS_SRC_GLOBS}}-driven and the stack-specific sweeps move behind pack conditionals."
+    },
+    ".claude/skills/implement-phase/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/implement-phase/SKILL.md",
+      "portability": "light",
+      "coupling": 21
+    },
+    ".claude/skills/learn/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/learn/SKILL.md",
+      "portability": "light",
+      "coupling": 3,
+      "notes": "Carries hard rule 6 (the regrowth gate). Its routing table is the counterpart to the budget system \u2014 both must be ported together or the budget check has no policy behind it."
+    },
+    ".claude/skills/manage-context/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/manage-context/SKILL.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/skills/ship/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/ship/SKILL.md",
+      "portability": "verbatim",
+      "coupling": 0
+    },
+    ".claude/skills/board/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/board/SKILL.md",
+      "portability": "verbatim",
+      "coupling": 0
+    },
+    ".claude/skills/ralph/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/ralph/SKILL.md",
+      "portability": "light",
+      "coupling": 1
+    },
+    ".claude/skills/get-issue/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/get-issue/SKILL.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/skills/cleanup/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/cleanup/SKILL.md",
+      "portability": "light",
+      "coupling": 1
+    },
+    ".claude/skills/github-issue.md": {
+      "tier": "core",
+      "dest": "core/skills/tracker-issue/SKILL.md",
+      "portability": "rewrite",
+      "coupling": 10,
+      "notes": "RENAMED github-issue -> tracker-issue. Also normalises a structural oddity: upstream this is a bare .md at the skills root rather than a directory with SKILL.md like every sibling."
+    },
+    ".claude/skills/resolve-copilot-feedback/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/resolve-review-feedback/SKILL.md",
+      "portability": "rewrite",
+      "coupling": 17,
+      "notes": "RENAMED. Copilot is one reviewer backend; the GraphQL resolveReviewThread call becomes {{VCS_RESOLVE_THREAD}} and degrades to 'reply to each thread' when the host has no resolve concept."
+    },
+    ".claude/skills/update-context/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/update-context/SKILL.md",
+      "portability": "rewrite",
+      "coupling": 15,
+      "notes": "Enumerates upstream's 20 context files by name. Becomes a generated list from the installed context skeleton."
+    },
+    ".claude/skills/update-progress/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/update-progress/SKILL.md",
+      "portability": "light",
+      "coupling": 8
+    },
+    ".claude/skills/generate-features/SKILL.md": {
+      "tier": "core",
+      "dest": "core/skills/generate-features/SKILL.md",
+      "portability": "light",
+      "coupling": 8
+    },
+    ".claude/skills/docs-drift/SKILL.md": {
+      "tier": "pack:docs-site",
+      "dest": "packs/docs-site/skills/docs-drift/SKILL.md",
+      "portability": "light",
+      "coupling": 24
+    },
+    ".claude/skills/railway/SKILL.md": {
+      "tier": "pack:railway",
+      "dest": "packs/railway/skills/railway/SKILL.md",
+      "portability": "verbatim",
+      "coupling": 0
+    },
+    ".claude/skills/add-domain/SKILL.md": {
+      "tier": "pack:fastify-kysely-pg",
+      "dest": "packs/fastify-kysely-pg/skills/add-domain/SKILL.md",
+      "portability": "light",
+      "coupling": 3
+    },
+    ".claude/skills/add-migration/SKILL.md": {
+      "tier": "pack:sql-migrations",
+      "dest": "packs/sql-migrations/skills/add-migration/SKILL.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/skills/typecheck-all/SKILL.md": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "coupling": 4,
+      "reason": "Two upstream build commands in a trench coat. Replaced by the PKG_BUILD/PKG_TYPECHECK tokens, which every other skill renders inline."
+    },
+    ".claude/agents/spec-writer.md": {
+      "tier": "core",
+      "dest": "core/agents/spec-writer.md",
+      "portability": "light",
+      "coupling": 2
+    },
+    ".claude/agents/developer.md": {
+      "tier": "core",
+      "dest": "core/agents/developer.md",
+      "portability": "light",
+      "coupling": 3
+    },
+    ".claude/agents/auditor.md": {
+      "tier": "core",
+      "dest": "core/agents/auditor.md",
+      "portability": "rewrite",
+      "coupling": 1,
+      "notes": "Its 'Frontend Correctness Patterns Checklist' is react-vite-specific and moves behind a pack conditional; the architectural dimensions are core."
+    },
+    ".claude/agents/line-reviewer.md": {
+      "tier": "core",
+      "dest": "core/agents/line-reviewer.md",
+      "portability": "light",
+      "coupling": 1
+    },
+    ".claude/agents/board-runner.md": {
+      "tier": "core",
+      "dest": "core/agents/board-runner.md",
+      "portability": "rewrite",
+      "coupling": 10
+    },
+    ".claude/agents/pr-creator.md": {
+      "tier": "core",
+      "dest": "core/agents/pr-creator.md",
+      "portability": "rewrite",
+      "coupling": 8
+    },
+    ".claude/agents/refinement.md": {
+      "tier": "core",
+      "dest": "core/agents/refinement.md",
+      "portability": "light",
+      "coupling": 4
+    },
+    ".claude/agents/test-runner.md": {
+      "tier": "core",
+      "dest": "core/agents/test-runner.md",
+      "portability": "light",
+      "coupling": 2
+    },
+    ".claude/agents/context-updater.md": {
+      "tier": "core",
+      "dest": "core/agents/context-updater.md",
+      "portability": "light",
+      "coupling": 1
+    },
+    ".claude/agents/agent-manager.md": {
+      "tier": "core",
+      "dest": "core/agents/agent-manager.md",
+      "portability": "light",
+      "coupling": 0
+    },
+    ".claude/workflows/ship.js": {
+      "tier": "core",
+      "dest": "core/workflows/ship.js",
+      "portability": "rewrite",
+      "coupling": 20,
+      "notes": "Deterministic multi-agent pipeline. REPO const and every gh invocation tokenize; the Copilot-review phase becomes conditional on VCS_LIST_REVIEW_THREADS being non-empty."
+    },
+    "scripts/check-rule-budget.sh": {
+      "tier": "core",
+      "dest": "core/scripts/check-rule-budget.sh",
+      "portability": "light",
+      "coupling": 0,
+      "notes": "Already stack-agnostic. Only .claude/rules hardcoding tokenizes to {{PATHS_RULES_DIR}}."
+    },
+    "scripts/check-rule-preservation.sh": {
+      "tier": "core",
+      "dest": "core/scripts/check-rule-preservation.sh",
+      "portability": "light",
+      "coupling": 0
+    },
+    "scripts/extract-rule-headings.sh": {
+      "tier": "core",
+      "dest": "core/scripts/extract-rule-headings.sh",
+      "portability": "verbatim",
+      "coupling": 0,
+      "notes": "Pure stdin->stdout text transform. Ports byte-identical."
+    },
+    "scripts/build-frozen-headings.sh": {
+      "tier": "core",
+      "dest": "core/scripts/build-frozen-headings.sh",
+      "portability": "light",
+      "coupling": 1,
+      "notes": "Its citation corpus glob `packages/*/src` is the one upstream assumption \u2014 becomes {{PATHS_SRC_GLOBS}}."
+    },
+    "scripts/sync-copilot-instructions.mjs": {
+      "tier": "core",
+      "dest": "core/scripts/sync-agent-instructions.mjs",
+      "portability": "rewrite",
+      "coupling": 15,
+      "notes": "RENAMED (it generates Codex + Copilot variants, not just Copilot). Emits derived instruction files for secondary agent consumers; the output targets are config-driven so a repo with no Copilot/Codex gets a no-op."
+    },
+    "scripts/ralph.sh": {
+      "tier": "core",
+      "dest": "core/scripts/ralph.sh",
+      "portability": "rewrite",
+      "coupling": 12,
+      "notes": "Headless loop driver. PROJECT_OWNER/GH_REPO consts and every gh call tokenize; the lock helpers route through TRACKER_LOCK_*."
+    },
+    "scripts/security-scan.sh": {
+      "tier": "pack:security-scanning",
+      "dest": "packs/security-scanning/scripts/security-scan.sh",
+      "portability": "light",
+      "coupling": 3
+    },
+    "scripts/check-migration-policy.mjs": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "reason": "Enforces upstream's specific migration policy against its own table conventions. The generalisable half is already prose in the sql-migrations pack's rule."
+    },
+    "scripts/check-migration-prefixes.mjs": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "reason": "As above \u2014 upstream-specific numbering audit."
+    },
+    "scripts/check-migration-policy.test.mjs": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "reason": "Tests for an excluded script."
+    },
+    "scripts/check-migration-prefixes.test.mjs": {
+      "tier": "excluded",
+      "portability": "excluded",
+      "reason": "Tests for an excluded script."
+    },
+    ".claude/settings.json": {
+      "tier": "core",
+      "dest": "core/settings.json",
+      "portability": "rewrite",
+      "coupling": 0,
+      "notes": "Permissions allowlist. Rendered from the selected tracker/VCS/pkg tokens so a repo only grants what its own tooling needs."
+    },
+    "(split) testing-vitest": {
+      "tier": "pack:node-ts",
+      "dest": "packs/node-ts/rules/testing-vitest.md",
+      "portability": "rewrite",
+      "notes": "Second half of the .claude/rules/testing.md split \u2014 runner-specific hygiene. Has no standalone upstream file; ct extract does not regenerate it, so upstream changes to the vitest sections must be merged by hand."
+    },
+    "(authored) core/root-doc.md": {
+      "tier": "core",
+      "dest": "core/root-doc.md",
+      "portability": "authored",
+      "notes": "Authored here \u2014 a lean root agent-instruction file with a stated line ceiling."
+    },
+    "(authored) core/context/README.md": {
+      "tier": "core",
+      "dest": "core/context/README.md",
+      "portability": "authored",
+      "notes": "Authored here \u2014 context-directory skeleton and the staleness rule."
+    },
+    "(authored) core/settings.json": {
+      "tier": "core",
+      "dest": "core/settings.json",
+      "portability": "authored",
+      "notes": "Authored here \u2014 permission allowlist derived from the config's own commands."
+    }
+  },
+  "neverPort": [
+    ".claude/settings.local.json",
+    ".claude/worktrees/**",
+    ".claude/scheduled_tasks.lock",
+    ".ai/specs/**",
+    ".ai/context/**",
+    ".ai/features/**",
+    ".ai/discovery/**",
+    ".ai/audit-findings/**"
+  ],
+  "neverPortReason": "Local machine state, in-flight worktrees, and 460+ project-specific specs/context documents. The context DIRECTORY STRUCTURE is templated under core/context/ as a skeleton; its contents are never copied."
+}

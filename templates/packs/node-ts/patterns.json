@@ -1,0 +1,5 @@
+{
+  "backend-general": "{{PATHS_SRC_GLOBS}}/**/*.ts",
+  "shared-types": "{{PATHS_SRC_GLOBS}}/**/*.ts",
+  "testing-vitest": "**/*.test.ts,**/*.test.tsx,**/*.spec.ts"
+}

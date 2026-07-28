@@ -1,0 +1,6 @@
+{
+  "backend-api": "{{PATHS_SRC_GLOBS}}/**/*.routes.ts",
+  "backend-database": "{{PATHS_SRC_GLOBS}}/**/*.repository.ts,{{PATHS_SRC_GLOBS}}/**/db.ts",
+  "delete-lifecycle": "{{PATHS_SRC_GLOBS}}/**/*.routes.ts,{{PATHS_SRC_GLOBS}}/**/*.service.ts,{{PATHS_SRC_GLOBS}}/**/*.repository.ts",
+  "integration-adapters": "{{PATHS_SRC_GLOBS}}/**/providers/**/*.ts"
+}

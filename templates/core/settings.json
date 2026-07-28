@@ -1,0 +1,27 @@
+{
+  "_comment": "Project-level permission allowlist. Only the commands this repo's own config declares are granted — a repo with no typecheck step never sees a typecheck permission. Read-only tracker/VCS queries are allowlisted; every mutating one (label edits, PR creation, merges) is deliberately absent so it still prompts.",
+  "permissions": {
+    "allow": [
+      {{#if PKG_BUILD}}"Bash({{PKG_BUILD}})",{{/if}}
+      {{#if PKG_TYPECHECK}}"Bash({{PKG_TYPECHECK}})",{{/if}}
+      {{#if PKG_TEST}}"Bash({{PKG_TEST}})",{{/if}}
+      {{#if PKG_LINT}}"Bash({{PKG_LINT}})",{{/if}}
+      {{#if TRACKER_KIND=github}}"Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",{{/if}}
+      {{#if TRACKER_KIND=jira}}"Bash(jira issue view:*)",
+      "Bash(jira issue list:*)",{{/if}}
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(bash scripts/check-rule-budget.sh)",
+      "Bash(bash scripts/check-rule-preservation.sh:*)",
+      "Bash(bash scripts/build-frozen-headings.sh)"
+    ]
+  }
+}

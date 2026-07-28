@@ -1,0 +1,361 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/avays/ClaudeTools/claudetools.config.schema.json",
+  "title": "ClaudeTools configuration",
+  "description": "Drives `ct render`. Every token below is substituted into templates/ as {{TOKEN}}. Tokens are grouped by namespace; `ct check` fails on any unrendered token, and on any schema token that no template uses (dead vocabulary).",
+  "type": "object",
+  "required": [
+    "project",
+    "tracker",
+    "vcs",
+    "vocab",
+    "pkg",
+    "paths",
+    "packs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "project": {
+      "type": "object",
+      "description": "Identity of the consuming repo.",
+      "required": [
+        "PROJECT_NAME",
+        "PROJECT_MAIN_BRANCH"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "PROJECT_NAME": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable project name, e.g. 'Dynamic ORM Platform'."
+        },
+        "PROJECT_DESCRIPTION": {
+          "type": "string",
+          "default": "",
+          "description": "One-line description used in generated doc headers."
+        },
+        "PROJECT_MAIN_BRANCH": {
+          "type": "string",
+          "default": "main",
+          "description": "Default integration branch. PRs target this unless a skill says otherwise."
+        },
+        "PROJECT_ROOT_DOC": {
+          "type": "string",
+          "default": "CLAUDE.md",
+          "description": "Path to the repo's root agent-instruction file."
+        }
+      }
+    },
+    "tracker": {
+      "type": "object",
+      "description": "Issue tracker adapter. Command tokens are shell command templates; ${ID} interpolates the issue id, ${BODY}/${LABEL}/${STATUS} their obvious arguments. A profile in templates/trackers/<kind>/ supplies defaults for every token here.",
+      "required": [
+        "TRACKER_KIND"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "TRACKER_KIND": {
+          "enum": [
+            "github",
+            "jira",
+            "none"
+          ],
+          "description": "Selects the profile under templates/trackers/."
+        },
+        "TRACKER_ISSUE_REF_FORMAT": {
+          "type": "string",
+          "description": "How an issue is written inline, with ${ID}. GitHub '#${ID}'; JIRA '${ID}' (keys are already qualified, e.g. PROJ-123)."
+        },
+        "TRACKER_ISSUE_URL": {
+          "type": "string",
+          "description": "Browser URL for an issue, with ${ID}."
+        },
+        "TRACKER_VIEW_ISSUE": {
+          "type": "string",
+          "description": "Command printing an issue's title/body/state/labels."
+        },
+        "TRACKER_LIST_ISSUES": {
+          "type": "string",
+          "description": "Command listing open issues for triage."
+        },
+        "TRACKER_COMMENT_ISSUE": {
+          "type": "string",
+          "description": "Command posting a comment, with ${ID} and ${BODY}."
+        },
+        "TRACKER_CLOSE_ISSUE": {
+          "type": "string",
+          "description": "Command closing an issue."
+        },
+        "TRACKER_ADD_LABEL": {
+          "type": "string",
+          "description": "Command adding a label/tag, with ${ID} and ${LABEL}."
+        },
+        "TRACKER_REMOVE_LABEL": {
+          "type": "string",
+          "description": "Command removing a label/tag."
+        },
+        "TRACKER_SET_STATUS": {
+          "type": "string",
+          "description": "Command moving the issue's workflow state, with ${ID} and ${STATUS}. Empty string if the tracker has no board."
+        },
+        "TRACKER_LOCK_MECHANISM": {
+          "type": "string",
+          "description": "One-sentence prose naming how the agent mutex is represented (GitHub: an agent:* label; JIRA: a field or assignee convention; none: a lockfile). Rendered into workflow prose so a reader is never told to use a mechanism the tracker lacks."
+        },
+        "TRACKER_LOCK_ACQUIRE": {
+          "type": "string",
+          "description": "Command acquiring the agent working lock."
+        },
+        "TRACKER_LOCK_RELEASE": {
+          "type": "string",
+          "description": "Command releasing it."
+        },
+        "TRACKER_LOCK_QUERY": {
+          "type": "string",
+          "description": "Command printing an issue's current lock state, for stale-lock recovery."
+        },
+        "TRACKER_CLOSE_KEYWORD": {
+          "type": "string",
+          "description": "PR-body phrase that auto-closes on merge, with ${ID}. GitHub 'Closes #${ID}'; JIRA often a smart commit 'Closes ${ID}' or empty if unsupported."
+        },
+        "TRACKER_REF_KEYWORD": {
+          "type": "string",
+          "description": "PR-body phrase that links WITHOUT closing, for partial delivery. GitHub 'Refs #${ID}'."
+        },
+        "TRACKER_BOARD_NAME": {
+          "type": "string",
+          "description": "Display name of the board, for prose."
+        },
+        "TRACKER_BOARD_URL": {
+          "type": "string",
+          "description": "Board URL, for prose. Empty if none."
+        },
+        "TRACKER_CREATE_ISSUE": {
+          "type": "string",
+          "description": "Command creating a new issue, with ${TITLE} and ${BODY}."
+        }
+      }
+    },
+    "vcs": {
+      "type": "object",
+      "description": "Code-host adapter for pull/merge requests and review threads.",
+      "required": [
+        "VCS_KIND",
+        "VCS_REPO_SLUG"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "VCS_KIND": {
+          "enum": [
+            "github",
+            "gitlab",
+            "bitbucket",
+            "none"
+          ]
+        },
+        "VCS_REPO_SLUG": {
+          "type": "string",
+          "minLength": 1,
+          "description": "owner/name, e.g. 'Digital-Synchrony/ORM'."
+        },
+        "VCS_REPO_URL": {
+          "type": "string",
+          "description": "Browser URL of the repo root."
+        },
+        "VCS_DEFAULT_BASE": {
+          "type": "string",
+          "default": "main",
+          "description": "Branch PRs target by default."
+        },
+        "VCS_CREATE_PR": {
+          "type": "string",
+          "description": "Command opening a PR/MR, with ${TITLE}, ${BODY}, ${BASE}, ${HEAD}."
+        },
+        "VCS_CREATE_DRAFT_PR": {
+          "type": "string",
+          "description": "Same, as a draft. Empty if the host has no draft concept."
+        },
+        "VCS_VIEW_PR": {
+          "type": "string",
+          "description": "Command showing a PR, with ${PR}."
+        },
+        "VCS_PR_CHECKS": {
+          "type": "string",
+          "description": "Command listing CI check status for a PR."
+        },
+        "VCS_MARK_READY": {
+          "type": "string",
+          "description": "Command flipping a draft to ready. Empty if unsupported."
+        },
+        "VCS_LIST_REVIEW_THREADS": {
+          "type": "string",
+          "description": "Command listing review threads with resolution state."
+        },
+        "VCS_RESOLVE_THREAD": {
+          "type": "string",
+          "description": "Command resolving one review thread, with ${THREAD}. Empty if unsupported \u2014 the resolve-review-feedback skill degrades to replying instead."
+        },
+        "VCS_PR_URL_FORMAT": {
+          "type": "string",
+          "description": "Browser URL for a PR, with ${PR}."
+        },
+        "VCS_RERUN_FAILED_CHECKS": {
+          "type": "string",
+          "description": "Command re-running only failed CI jobs. Empty if unsupported."
+        }
+      }
+    },
+    "vocab": {
+      "type": "object",
+      "description": "Nouns. Rendered into prose so a JIRA/GitLab shop never reads GitHub vocabulary.",
+      "additionalProperties": false,
+      "properties": {
+        "VOCAB_ISSUE": {
+          "type": "string",
+          "default": "issue",
+          "description": "Singular, lowercase: 'issue' | 'ticket'."
+        },
+        "VOCAB_ISSUES": {
+          "type": "string",
+          "default": "issues"
+        },
+        "VOCAB_ISSUE_CAP": {
+          "type": "string",
+          "default": "Issue",
+          "description": "Sentence-initial form."
+        },
+        "VOCAB_PR": {
+          "type": "string",
+          "default": "PR",
+          "description": "'PR' | 'MR'."
+        },
+        "VOCAB_PRS": {
+          "type": "string",
+          "default": "PRs"
+        },
+        "VOCAB_BOARD": {
+          "type": "string",
+          "default": "project board",
+          "description": "'project board' | 'JIRA board' | 'backlog'."
+        },
+        "VOCAB_REVIEWER": {
+          "type": "string",
+          "default": "the automated reviewer",
+          "description": "Name of the bot reviewer whose feedback the review-feedback skill processes, e.g. 'Copilot'."
+        }
+      }
+    },
+    "pkg": {
+      "type": "object",
+      "description": "Build/test commands. Every skill and agent that says 'run typecheck' renders the real command here.",
+      "additionalProperties": false,
+      "properties": {
+        "PKG_MANAGER": {
+          "type": "string",
+          "default": "npm",
+          "description": "npm | pnpm | yarn | bun | cargo | uv | make | ..."
+        },
+        "PKG_INSTALL": {
+          "type": "string",
+          "description": "Install dependencies."
+        },
+        "PKG_BUILD": {
+          "type": "string",
+          "description": "Build. Empty string if the project has no build step \u2014 prose that mentions building is dropped at render."
+        },
+        "PKG_TYPECHECK": {
+          "type": "string",
+          "description": "Type-check. Empty if untyped."
+        },
+        "PKG_TEST": {
+          "type": "string",
+          "description": "Run the test suite."
+        },
+        "PKG_LINT": {
+          "type": "string",
+          "description": "Lint. Empty if none."
+        },
+        "PKG_SYNC_AGENTS": {
+          "type": "string",
+          "description": "Regenerate derived agent-instruction files (the sync-agent-instructions script). Empty if the repo has no secondary agent consumers."
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "description": "Where things live in the consuming repo.",
+      "additionalProperties": false,
+      "properties": {
+        "PATHS_RULES_DIR": {
+          "type": "string",
+          "default": ".claude/rules",
+          "description": "Path-scoped convention files."
+        },
+        "PATHS_SKILLS_DIR": {
+          "type": "string",
+          "default": ".claude/skills"
+        },
+        "PATHS_AGENTS_DIR": {
+          "type": "string",
+          "default": ".claude/agents"
+        },
+        "PATHS_SPECS_DIR": {
+          "type": "string",
+          "default": ".ai/specs",
+          "description": "Per-feature implementation specs."
+        },
+        "PATHS_CONTEXT_DIR": {
+          "type": "string",
+          "default": ".ai/context",
+          "description": "Long-lived project state files."
+        },
+        "PATHS_SRC_GLOBS": {
+          "type": "string",
+          "default": "src",
+          "description": "Space-separated globs of first-party source, git-ls-files style. Used as the citation corpus by build-frozen-headings.sh \u2014 a heading cited in a source comment must be discoverable here."
+        }
+      }
+    },
+    "packs": {
+      "type": "array",
+      "description": "Opt-in stack packs installed alongside core. Each name must match a directory under templates/packs/.",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "ci": {
+      "type": "object",
+      "description": "Which CI wiring to emit for the governance gates.",
+      "additionalProperties": false,
+      "properties": {
+        "CI_KIND": {
+          "enum": [
+            "github-actions",
+            "gitlab-ci",
+            "none"
+          ],
+          "default": "none"
+        }
+      }
+    },
+    "upstream": {
+      "type": "object",
+      "description": "Only used by `ct extract` when refreshing templates from an upstream repo. Never read at render time.",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Local filesystem path to the upstream checkout. Read-only \u2014 extract never writes there."
+        },
+        "lastSha": {
+          "type": "string",
+          "description": "Upstream commit the templates were last extracted from."
+        }
+      }
+    }
+  }
+}

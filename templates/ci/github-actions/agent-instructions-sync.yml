@@ -1,0 +1,69 @@
+name: Agent Instructions Sync
+
+# The regrowth gate. Three checks, in increasing order of how much they cost:
+#   1. derived agent files are in sync with their sources
+#   2. no rule file is over its byte budget
+#   3. (PRs only) a rule file that SHRANK did not silently lose facts
+#
+# Check 3 is the subtle one. Budgets stop rules growing; nothing stops a
+# well-meaning "cleanup" commit deleting a hard-won lesson to get under budget.
+# The preservation gate runs only on files whose byte count went DOWN, and it
+# compares precedent references, command content, frozen headings, the
+# operational-fact census, and modal density against the merge base.
+
+on:
+  pull_request:
+  push:
+    branches: [{{PROJECT_MAIN_BRANCH}}]
+
+jobs:
+  agent-instructions-sync:
+    name: Agent Instructions Sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The preservation gate diffs against the merge base, so a shallow
+          # clone of depth 1 makes it silently unable to find the base commit.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+{{#if PKG_SYNC_AGENTS}}
+      - name: Derived agent files are in sync with their sources
+        run: {{PKG_SYNC_AGENTS}} --check
+{{/if}}
+
+      - name: Rule-file size budgets (regrowth gate)
+        run: bash scripts/check-rule-budget.sh
+
+      - name: Rule-file fact-preservation gate (PRs that shrink a rule file)
+        if: github.event_name == 'pull_request'
+        env:
+          # Passed via env rather than interpolated into the script body —
+          # a branch name is attacker-controlled input on a fork PR.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git fetch -q --no-tags --depth=200 origin "$BASE_SHA" || git fetch -q --no-tags origin "$BASE_SHA"
+          MB=$(git merge-base "$BASE_SHA" HEAD 2>/dev/null || echo "$BASE_SHA")
+          fail=0
+          for f in $(git diff --name-only --diff-filter=M "$MB" HEAD -- '{{PATHS_RULES_DIR}}/*.md'); do
+            name=$(basename "$f" .md)
+            old_size=$(git cat-file -s "$MB:$f" 2>/dev/null || echo 0)
+            new_size=$(wc -c < "$f")
+            if [ "$new_size" -lt "$old_size" ]; then
+              # A deliberate fact removal opts out with a commit-message trailer
+              # on a commit touching the file:
+              #   preservation-override: <rule-name> — <justification>
+              if git log "$MB"..HEAD --format=%B -- "$f" | grep -q "preservation-override: $name"; then
+                echo "SKIP $name (preservation-override trailer present)"
+                continue
+              fi
+              echo "== $name shrank ${old_size} -> ${new_size} B; running preservation gate"
+              bash scripts/check-rule-preservation.sh "$name" "$MB" || fail=1
+            fi
+          done
+          exit "$fail"
