@@ -69,7 +69,7 @@ git diff origin/<base>...HEAD --name-only
 
 ### 3. Learn from recent reviews
 
-Before writing findings, pull Copilot review comments from the 3 most recent merged PRs that touch overlapping paths:
+Before writing findings, pull {{VOCAB_REVIEWER}} review comments from the 3 most recent merged PRs that touch overlapping paths:
 
 ```bash
 gh pr list --repo {{VCS_REPO_SLUG}} --state merged --limit 10 --json number,title,files
@@ -178,7 +178,7 @@ For patterns that don't have a single greppable shape (pagination threading, pro
 
 ### 7. Pass 3 — Review-blocker checklist (cross-cutting)
 
-Eight patterns that have each shipped at least once and been caught by Copilot. Any hit is a CRITICAL or HIGH finding — not a nit.
+Eight patterns that have each shipped at least once and been caught by {{VOCAB_REVIEWER}}. Any hit is a CRITICAL or HIGH finding — not a nit.
 
 **1. Frontend `/api/v1/` double-prefix**
 ```bash
@@ -224,11 +224,11 @@ Cross-check:
 - `BUILD_STATE.md` and `CHANGELOG.md` don't reference removed behavior (dead timeouts, deprecated ops).
 A disagreement between spec/docs and code is a HIGH finding — reviewers flag these every round.
 
-### 7b. Pass 4 — Code-review-style audit (audit as Copilot would)
+### 7b. Pass 4 — Code-review-style audit (audit as {{VOCAB_REVIEWER}} would)
 
 The path-scoped rule walk catches *known* anti-patterns. It misses the
-checks a careful human / Copilot reviewer would catch on first read.
-After Pass 3, do this pass. Each item below was a real Copilot finding
+checks a careful human / {{VOCAB_REVIEWER}} reviewer would catch on first read.
+After Pass 3, do this pass. Each item below was a real {{VOCAB_REVIEWER}} finding
 on a recent PR that the path-scoped walk missed — see
 `{{PATHS_AGENTS_DIR}}/auditor.md` "Code-review-style audit checks" for the
 full discussion.
@@ -411,7 +411,7 @@ Precedent: PR #663 (#662) `<CriteriaLogicEditor>` shipped with pencil
 visible for trees containing nested `$expr`. `formatLogicString` rendered
 `$expr` leaves as the literal token `expr`; `parseLogicString` only
 accepts INT/AND/OR/NOT/parens. Result: un-saveable edit mode. 4 ralph
-passes missed it; Copilot caught it on first review. Fix was to gate
+passes missed it; {{VOCAB_REVIEWER}} caught it on first review. Fix was to gate
 the pencil on `extractLeavesInOrder(value).some(isExpression)` so
 nested `$expr` triggers the same "edit in advanced mode" hint as
 root-`$expr`.
@@ -480,7 +480,7 @@ contract-edge fixture coverage at every depth. Pass-3 audit reported
 "`$not` contract-edge sweep clean." But `<CriteriaList>` had no
 `isNotWrapper(child)` branch — the leaf else-fallthrough mis-rendered
 `{$not: {...}}` as a leaf with field name `$not`. 4 ralph passes
-missed it; Copilot caught it on third review. Fix added the dispatch
+missed it; {{VOCAB_REVIEWER}} caught it on third review. Fix added the dispatch
 branch + 3 RTL tests rendering `$not` trees through the builder.
 
 The lesson: 4j ("new component → its own cross-product sweep") and 4k
@@ -532,7 +532,7 @@ the runtime engine — DON'T guess" for the canonical pattern.
 
 Precedent: PR #716 (`#715` registry description quality) shipped 12
 examples that didn't resolve under the actual engine. Caught only via
-Copilot review across four rounds. Rule 4 + this audit step are the
+{{VOCAB_REVIEWER}} review across four rounds. Rule 4 + this audit step are the
 backstops.
 
 ### 8. Branch hygiene — stranded dev-suffix branches
@@ -556,7 +556,7 @@ Precedent: PR #508 shipped with only the spec commit pushed because the implemen
 
 ### 8b. Pre-push lint hygiene + agent-instructions sync
 
-Three classes of mistake that surface in CI / Copilot review **after** typecheck passes — local typecheck doesn't catch any of them. The auditor sweep MUST run these before declaring a pass.
+Three classes of mistake that surface in CI / {{VOCAB_REVIEWER}} review **after** typecheck passes — local typecheck doesn't catch any of them. The auditor sweep MUST run these before declaring a pass.
 
 **Unreachable code after `throw` / `return` (CodeQL fires; ESLint suppression does NOT carry over):**
 

@@ -187,14 +187,14 @@ git diff origin/<base>...HEAD -- '*.e2e.ts' '**/*.page.ts' \
 ### 7. Fix-pass blast radius — did earlier fixes seed new defects?
 
 When auditing a branch that has been through prior audit/review rounds
-(commit messages mention findings, review rounds, or Copilot), scan the
+(commit messages mention findings, review rounds, or {{VOCAB_REVIEWER}}), scan the
 FIX commits' own blast radius — on PR #988 half the review rounds were
 findings created by earlier rounds' fixes:
 
 ```bash
 # a. Workflow metadata in comments/test names (#843) — breaks CI. Includes
 #    the space-separated "audit round N" form (#1011 — PR #1161 shipped 7
-#    Copilot threads on this exact phrasing before the arch test's regex
+#    {{VOCAB_REVIEWER}} threads on this exact phrasing before the arch test's regex
 #    was broadened to catch it; this grep mirrors that fix). The last
 #    alternation catches the bare-trailing-"audit" form (`(#1168 audit)`,
 #    `#3 audit fix`) the arch test's patterns MISS — PR #1180 (#1168)

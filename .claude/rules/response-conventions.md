@@ -22,7 +22,7 @@ If there is no open PR (pre-spec discussion, post-merge cleanup,
 branch-less chat), omit the line — never fabricate or guess a URL.
 
 **Applies:** during implementation/audit/review of a feature with an open
-PR; after pushing a commit that updates it; after resolving Copilot threads
+PR; after pushing a commit that updates it; after resolving {{VOCAB_REVIEWER}} threads
 or fixing CI on it; when reporting CI status, ralph audit results, or
 merge-readiness.
 

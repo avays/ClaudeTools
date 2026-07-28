@@ -100,7 +100,7 @@ Table of all files with action (Create/Modify) and sub-phase.
 ### 4a. Pre-flight checklist (mandatory before finalising)
 
 Work through every item. These are the mistakes specs have repeated and the
-fixes took extra Copilot + audit rounds. See
+fixes took extra {{VOCAB_REVIEWER}} + audit rounds. See
 `{{PATHS_AGENTS_DIR}}/spec-writer.md` for the canonical list; the abbreviated
 version:
 
@@ -379,7 +379,7 @@ version:
     - **Out-of-scope / "no edit needed / handled later" meta-claims must
       match what the PR actually changes.** A spec asserting "CLAUDE.md needs
       no edit" or "DEFERRED_ITEMS updates happen in a later step" while the
-      same PR edits those files is a self-contradiction Copilot flags every
+      same PR edits those files is a self-contradiction {{VOCAB_REVIEWER}} flags every
       time. Reconcile the scope prose with the real file set.
     - **When a later revision round ADDS an edit, recompute every
       Verify-step grep-count the new edit affects.** A `grep -c "X" → 1`

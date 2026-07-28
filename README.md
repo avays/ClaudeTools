@@ -100,6 +100,40 @@ touching the file:
 preservation-override: workflow — the BullMQ chain moved to a worked example
 ```
 
+### Wire them into CI
+
+Nothing runs these for you. A gate that only fires when someone remembers is a
+gate that stops firing. Drop this into your existing workflow:
+
+```yaml
+- uses: actions/checkout@v4
+  with: { fetch-depth: 0 }        # the preservation gate diffs against the
+                                  # merge base; depth 1 makes it unable to find it
+
+- run: bash scripts/check-rule-budget.sh
+
+- if: github.event_name == 'pull_request'
+  env:
+    BASE_SHA: ${{ github.event.pull_request.base.sha }}
+  run: |
+    set -euo pipefail
+    git fetch -q --no-tags origin "$BASE_SHA"
+    MB=$(git merge-base "$BASE_SHA" HEAD || echo "$BASE_SHA")
+    fail=0
+    for f in $(git diff --name-only --diff-filter=M "$MB" HEAD -- '.claude/rules/*.md'); do
+      name=$(basename "$f" .md)
+      old=$(git cat-file -s "$MB:$f" 2>/dev/null || echo 0)
+      [ "$(wc -c < "$f")" -lt "$old" ] || continue          # only files that SHRANK
+      git log "$MB"..HEAD --format=%B -- "$f" | grep -q "preservation-override: $name" \
+        && { echo "SKIP $name (override)"; continue; }
+      bash scripts/check-rule-preservation.sh "$name" "$MB" || fail=1
+    done
+    exit "$fail"
+```
+
+Budget runs on every push; preservation runs only on PRs, and only on files
+that got smaller.
+
 ## The one thing that isn't mechanical: the lock
 
 The pipeline runs agents in parallel on distinct issues. That rests entirely on

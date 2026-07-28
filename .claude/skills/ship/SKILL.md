@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Drive a {{VOCAB_ISSUE}} end-to-end to a merge-ready PR as one deterministic multi-agent Workflow — spec → spec-audit loop → implement+tests → ralph code-audit loop → context update → draft PR → Copilot-feedback loop → learn retrospective → ready + CI gate. Usage: /ship <issue_number>
+description: Drive a {{VOCAB_ISSUE}} end-to-end to a merge-ready PR as one deterministic multi-agent Workflow — spec → spec-audit loop → implement+tests → ralph code-audit loop → context update → draft PR → {{VOCAB_REVIEWER}}-feedback loop → learn retrospective → ready + CI gate. Usage: /ship <issue_number>
 user_invocable: true
 argument-hint: "<issue_number> [no-pr] [dry-run]"
 ---
@@ -35,14 +35,14 @@ If named resolution fails (registry snapshot from an older session), fall
 back to `scriptPath: "<repo>/.claude/workflows/ship.js"`.
 
 Argument mapping:
-- `no-pr` → `args.pr = false` (skip PR creation + Copilot loop + Learn retrospective + CI gate — no PR to harvest, comment on, or gate; context update still runs)
+- `no-pr` → `args.pr = false` (skip PR creation + {{VOCAB_REVIEWER}} loop + Learn retrospective + CI gate — no PR to harvest, comment on, or gate; context update still runs)
 - `dry-run` → `args.dryRun = true` (validate the script; spawns no agents)
 - Optional overrides: `args.maxAuditRounds` (default 5),
-  `args.maxCopilotRounds` (default 10), `args.copilotWaitSeconds` (default
+  `args.max{{VOCAB_REVIEWER}}Rounds` (default 10), `args.copilotWaitSeconds` (default
   600), `args.maxCiRounds` (default 3)
 
 When the workflow completes, report: branch, spec path, audit-loop
-convergence, PR URL, the Copilot-loop outcome (converged, or the
+convergence, PR URL, the {{VOCAB_REVIEWER}}-loop outcome (converged, or the
 outstanding threads if it hit the round cap), the CI-gate outcome (green,
 or the failing checks if it hit the round cap), and the Learn summary
 (which rules/skills were updated, or that no lessons were encoded).
@@ -78,7 +78,7 @@ or the failing checks if it hit the round cap), and the Learn summary
    the review loop below costs zero CI runs; the agent also dispatches ONE
    `workflow_dispatch` CI + security smoke run against the branch for early
    env-only-failure signal.
-8. **Copilot loop** — after every push the repo ruleset re-runs Copilot
+8. **{{VOCAB_REVIEWER}} loop** — after every push the repo ruleset re-runs {{VOCAB_REVIEWER}}
    review (drafts included — `review_draft_pull_requests: true`); the
    workflow waits ~10 min, checks for unresolved threads, and runs the
    `/resolve-review-feedback` procedure (fix or push back, one commit,
@@ -95,7 +95,7 @@ or the failing checks if it hit the round cap), and the Learn summary
     Then a babysit loop (cap: `maxCiRounds`): watch checks to completion;
     on failure, an Opus developer diagnoses from the actual job logs —
     real defects get a fix commit (whose push auto-re-triggers BOTH CI and
-    Copilot review, so the Copilot loop re-converges each round), pure
+    {{VOCAB_REVIEWER}} review, so the {{VOCAB_REVIEWER}} loop re-converges each round), pure
     infra flakes get `{{VCS_RERUN_FAILED_CHECKS}}` with no commit — until all
     checks are green.
 
@@ -112,5 +112,5 @@ The lock is released on every exit path. The terminal state is always
   issue. Phases within a run are sequential and coordinate through that
   shared worktree + remote pushes. `/board` remains the per-step
   (worktree-isolated) alternative.
-- GitHub-native (issue fetch + board + Copilot via `gh`). Adapting to Jira
+- GitHub-native (issue fetch + board + {{VOCAB_REVIEWER}} via `gh`). Adapting to Jira
   would swap only the Setup agent's fetch step, given a Jira connection.

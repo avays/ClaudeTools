@@ -62,7 +62,7 @@ Patterns that recur in PR review; they apply to every new component, and the
 > **Self-audit before you push.** Run the auditor agent on your staged diff,
 > or run `git diff --staged -- 'packages/ui/**' 'packages/frontend/**'`
 > through the patterns in `{{PATHS_AGENTS_DIR}}/auditor.md` → "Frontend Correctness
-> Patterns Checklist" — ~80% of what Copilot would flag.
+> Patterns Checklist" — ~80% of what {{VOCAB_REVIEWER}} would flag.
 
 ### Accessibility
 

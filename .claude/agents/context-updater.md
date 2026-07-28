@@ -74,7 +74,7 @@ Do NOT update:
    - **Current Focus stays ONE short line**: issue/epic + changelog pointer
      only. No branch names, no PR numbers, no stacking/status narrative —
      those go stale immediately and belong in `CHANGELOG.md`. (PR #988
-     burned two Copilot review rounds on this line alone.)
+     burned two {{VOCAB_REVIEWER}} review rounds on this line alone.)
 
 5. **If you touched `CLAUDE.md` (or anything under `{{PATHS_RULES_DIR}}|skills|agents`), regenerate the derived agent files** — the `agent-instructions-sync` CI job fails the build on staleness:
    ``` ```

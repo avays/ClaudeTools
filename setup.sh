@@ -78,8 +78,32 @@ esac
 
 # Profile supplies every TRACKER_* / VCS_* / VOCAB_* value. It is sourced AFTER
 # the vars above because several profile entries interpolate them.
+#
+# `set +u` around the source: a profile may reference a site-specific var
+# (JIRA_BASE_URL) that the operator has not exported yet. Under `set -u` that
+# aborts with "unbound variable" pointing at a line inside the profile, which
+# tells the reader nothing about what to do. Let it expand empty, then check
+# REQUIRED_EXTRA_VARS below and say plainly what is missing and how to supply it.
+REQUIRED_EXTRA_VARS=""
+set +u
 # shellcheck disable=SC1090
 . "$PROFILE_FILE"
+set -u
+
+missing=""
+for v in $REQUIRED_EXTRA_VARS; do
+  [ -n "${!v-}" ] || missing="$missing $v"
+done
+if [ -n "$missing" ]; then
+  echo "ERROR: profile '$PROFILE' needs these set before you run setup:" >&2
+  for v in $missing; do
+    hint=$(grep -E "^#   $v" "$PROFILE_FILE" | sed "s/^#   $v *//") || hint=""
+    printf '  %s%s\n' "$v" "${hint:+  — $hint}" >&2
+  done
+  echo >&2
+  echo "e.g.  $(for v in $missing; do printf '%s=... ' "$v"; done)./setup.sh --target $TARGET --profile $PROFILE ..." >&2
+  exit 2
+fi
 
 TOKENS="PROJECT_NAME PROJECT_MAIN_BRANCH VCS_REPO_SLUG
 PATHS_RULES_DIR PATHS_SKILLS_DIR PATHS_AGENTS_DIR PATHS_SPECS_DIR PATHS_CONTEXT_DIR PATHS_SRC_GLOBS

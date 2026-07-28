@@ -18,7 +18,7 @@ Agent definitions in `{{PATHS_AGENTS_DIR}}/`:
 - `context-updater.md` — Updates {{PATHS_CONTEXT_DIR}}/ and CLAUDE.md
 - `pr-creator.md` — Creates PR at the end of the workflow
 - `auditor.md` — Audits implementations against specs (manual invocation)
-- `line-reviewer.md` — Copilot-style line-by-line diff reviewer (pairs with auditor in the ralph loop)
+- `line-reviewer.md` — {{VOCAB_REVIEWER}}-style line-by-line diff reviewer (pairs with auditor in the ralph loop)
 - `board-runner.md` — Local orchestrator: queries board, invokes agents, advances status
 - `agent-manager.md` — This file (self-referential)
 
@@ -40,7 +40,7 @@ Agent definitions in `{{PATHS_AGENTS_DIR}}/`:
 | `ship` | (main session — launches the ship Workflow) |
 | `ralph` | (main session — headless drain/audit loops) |
 | `learn` | agent-manager (ship Learn phase; also manual) |
-| `resolve-review-feedback` | developer (ship Copilot loop; also manual) |
+| `resolve-review-feedback` | developer (ship {{VOCAB_REVIEWER}} loop; also manual) |
 | `cleanup` | (main session — post-merge) |
 | `docs-drift` | (main session — docs maintenance) |
 | `generate-features` | (main session — feature catalog refresh) |

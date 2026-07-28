@@ -230,7 +230,7 @@ mutate another record's canonical state.
 by design); routes the caller obviously owns (own user row, own API key).
 
 Precedents: PR #485 r1–2 — three route-level bypasses (link, list, summary) +
-a service-layer bypass in `files.service.ts` upload, all caught by Copilot.
+a service-layer bypass in `files.service.ts` upload, all caught by {{VOCAB_REVIEWER}}.
 
 ## Child-resource list routes must filter by the child's own owner, not just the parent's
 

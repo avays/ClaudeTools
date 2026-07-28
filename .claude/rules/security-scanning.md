@@ -131,7 +131,7 @@ fix the underlying condition instead of suppressing. Canonical example: a
 Precedent: PR #1155 (#1131) — self-audit rounds 1–3 fixed 6 truncated
 `check_id`s and 2 misplaced markers in `nginx.conf.template`,
 `platform-admin/nginx.conf`, `cors.ts`, before a live pinned-semgrep re-run
-confirmed zero remaining matches; a separate Copilot round caught a
+confirmed zero remaining matches; a separate {{VOCAB_REVIEWER}} round caught a
 `location /api/` scoping justification that didn't hold under the block's
 actual (broader) match pattern.
 

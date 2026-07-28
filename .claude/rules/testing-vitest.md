@@ -164,7 +164,7 @@ OTHER code on the page starts consuming.
 - **This applies proactively to every NEWLY-authored `react-i18next` mock, not
   only to one that breaks after a merge.** In a fresh test file
   `useTranslation` MUST return `{ t, i18n: { language: 'en' } }`, never a bare
-  `{ t }`, even if the component doesn't read `i18n.language` today — Copilot
+  `{ t }`, even if the component doesn't read `i18n.language` today — {{VOCAB_REVIEWER}}
   flags the bare-`t` shape at authoring time regardless.
 - Greppable proxy: any `vi.mock('react-i18next'` / `vi.mock('i18next'` whose
   factory returns a `useTranslation` stub with no `i18n` key.

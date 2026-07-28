@@ -263,7 +263,7 @@ second is the audit-trail link the rest of the pipeline reads.
 - **Do NOT merge a PR without the user's explicit approval.** This includes
   autonomous/overnight runs, ralph loops, and instructions like "run to the
   end" or "go all the way" — those mean drive the pipeline until the PR is
-  merge-ready (CI green, audits clean, Copilot threads resolved), then STOP
+  merge-ready (CI green, audits clean, {{VOCAB_REVIEWER}} threads resolved), then STOP
   and report. merging is never an agent's call; merging `{{PROJECT_MAIN_BRANCH}}`
   auto-deploys to production. Approval to merge one PR does not carry over
   to any other PR.

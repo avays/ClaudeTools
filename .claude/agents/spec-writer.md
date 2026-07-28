@@ -119,7 +119,7 @@ Always read these before writing a spec:
 ## Pre-Flight Checklist (run before finalising)
 
 These are the mistakes every spec iteration has repeated. Work through the list
-before pushing the spec — most are one-line greps that save a full Copilot round.
+before pushing the spec — most are one-line greps that save a full {{VOCAB_REVIEWER}} round.
 
 1. **Agent-tool tag category.** For every new route tagged `'llm-tool'`, the
    FIRST tag (lowercased) MUST appear in `SKILL_CATEGORIES` in
@@ -571,7 +571,7 @@ before pushing the spec — most are one-line greps that save a full Copilot rou
       meta-claims must match what the PR actually changes.** A spec's
       scope prose saying "CLAUDE.md needs no edit" or "DEFERRED_ITEMS/
       BUILD_STATE updates happen later in the pipeline" while the same PR
-      edits those files is a self-contradiction Copilot flags on sight.
+      edits those files is a self-contradiction {{VOCAB_REVIEWER}} flags on sight.
       Reconcile the out-of-scope section against the real file set the PR
       touches. Precedent: PR #1217 Copilot rounds 1 and 2 — both flagged
       the spec's "no edit / handled later" claims against the PR's actual

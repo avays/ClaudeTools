@@ -1,7 +1,7 @@
 export const meta = {
   name: 'ship',
-  description: 'Issue → spec → spec-audit loop → implement+tests → ralph code-audit loop → context update → draft PR → Copilot-feedback loop → learn → ready + CI gate',
-  whenToUse: 'Drive a GitHub issue end-to-end to a merge-ready PR (with Copilot review rounds auto-resolved) as one deterministic pipeline. args: { issue: <number>, pr?: boolean (default true), light?: boolean (force-skip the sonnet pre-grinds; they auto-skip when the spec is <300 lines / the diff is <150 changed lines), maxAuditRounds?: number (default 5, per grind stage), maxCopilotRounds?: number (default 10), copilotWaitSeconds?: number (default 600), maxCiRounds?: number (default 3), dryRun?: boolean }',
+  description: 'Issue → spec → spec-audit loop → implement+tests → ralph code-audit loop → context update → draft PR → {{VOCAB_REVIEWER}}-feedback loop → learn → ready + CI gate',
+  whenToUse: 'Drive a GitHub issue end-to-end to a merge-ready PR (with {{VOCAB_REVIEWER}} review rounds auto-resolved) as one deterministic pipeline. args: { issue: <number>, pr?: boolean (default true), light?: boolean (force-skip the sonnet pre-grinds; they auto-skip when the spec is <300 lines / the diff is <150 changed lines), maxAuditRounds?: number (default 5, per grind stage), max{{VOCAB_REVIEWER}}Rounds?: number (default 10), copilotWaitSeconds?: number (default 600), maxCiRounds?: number (default 3), dryRun?: boolean }',
   phases: [
     { title: 'Setup', detail: 'fetch issue, acquire agent:in-progress lock, create an isolated worktree + feature branch', model: 'haiku' },
     { title: 'Spec', detail: 'spec-writer drafts {{PATHS_SPECS_DIR}}/<slug>.md per /create-spec', model: 'fable' },
@@ -10,9 +10,9 @@ export const meta = {
     { title: 'Code Audit', detail: 'ralph loop, two grinds: sonnet (skipped for small diffs) then opus; two-lens on first + certifying rounds, combined between — exits only on a clean opus two-lens pass', model: 'opus' },
     { title: 'Context', detail: 'update-context + update-progress via context-updater' },
     { title: 'PR', detail: 'pr-creator opens a DRAFT PR (drafts skip CI, #1231) + dispatches one CI/security smoke run against the branch' },
-    { title: 'Copilot Loop', detail: 'after each push: wait ~10 min for Copilot review, resolve feedback, repeat until a round finds no new threads (drafts get Copilot but no CI)', model: 'opus' },
+    { title: '{{VOCAB_REVIEWER}} Loop', detail: 'after each push: wait ~10 min for {{VOCAB_REVIEWER}} review, resolve feedback, repeat until a round finds no new threads (drafts get {{VOCAB_REVIEWER}} but no CI)', model: 'opus' },
     { title: 'Learn', detail: 'harvest the review cycle, encode recurrence-class lessons into rules/skills, push to the PR' },
-    { title: 'CI Gate', detail: 'mark the draft ready (ready_for_review fires the merge-ref CI+security run), then loop: watch checks → fix failures → the fix push re-triggers both CI and Copilot → re-converge both', model: 'opus' },
+    { title: 'CI Gate', detail: 'mark the draft ready (ready_for_review fires the merge-ref CI+security run), then loop: watch checks → fix failures → the fix push re-triggers both CI and {{VOCAB_REVIEWER}} → re-converge both', model: 'opus' },
   ],
 }
 
@@ -34,7 +34,7 @@ if (!Number.isInteger(issue) || issue <= 0) {
 }
 const openPr = input.pr !== false
 const MAX_AUDIT_ROUNDS = Number(input.maxAuditRounds) > 0 ? Number(input.maxAuditRounds) : 5
-const MAX_COPILOT_ROUNDS = Number(input.maxCopilotRounds) > 0 ? Number(input.maxCopilotRounds) : 10
+const MAX_COPILOT_ROUNDS = Number(input.max{{VOCAB_REVIEWER}}Rounds) > 0 ? Number(input.max{{VOCAB_REVIEWER}}Rounds) : 10
 const COPILOT_WAIT_SECONDS = Number(input.copilotWaitSeconds) > 0 ? Number(input.copilotWaitSeconds) : 600
 // #1231 CI gate: rounds of (watch checks → fix → re-converge Copilot) after
 // the draft is marked ready. Each round costs a full CI suite, so keep small.
@@ -202,7 +202,7 @@ const findingsBlock = (rounds) =>
     })
     .join('\n')
 
-// Every audit round + Copilot round appends here; the Learn phase consumes
+// Every audit round + {{VOCAB_REVIEWER}} round appends here; the Learn phase consumes
 // this instead of re-harvesting the whole review cycle from GitHub.
 // Entries are truncated at push and capped at read (Learn prompt) so a
 // fully-utilized run (20+ rounds) can't blow the prompt back up.
@@ -444,7 +444,7 @@ Findings:\n${findingsBlock(review.findings)}`,
       log(`Code audit ${roundLabel}: ${all.length} finding(s) — fixing`)
       pushHistory(`Code-audit ${roundLabel} (${all.length} finding(s)):\n${findingsBlock(all)}`)
       must(await agent(
-        `Fix every finding below on branch ${setup.branchName} (issue #${issue}). ${IN_WT} For any you reject, add a one-line justification to the commit message. Re-run typecheck + affected tests until green, commit ("fix(#${issue}): audit ${roundLabel} findings"), push (if the push is rejected, \`git pull --rebase origin ${setup.branchName}\` first — e.g. an accepted Copilot Autofix commit).
+        `Fix every finding below on branch ${setup.branchName} (issue #${issue}). ${IN_WT} For any you reject, add a one-line justification to the commit message. Re-run typecheck + affected tests until green, commit ("fix(#${issue}): audit ${roundLabel} findings"), push (if the push is rejected, \`git pull --rebase origin ${setup.branchName}\` first — e.g. an accepted {{VOCAB_REVIEWER}} Autofix commit).
 Findings:\n${findingsBlock(all)}`,
         // Opus by owner preference (2026-07-21): no fable inside the audit
         // loops — audit-loop fixers run on Opus (matches spec-fix + copilot-fix).
@@ -489,27 +489,27 @@ Open it as a DRAFT (\`{{VCS_CREATE_PR}}`) — draft PRs skip CI/security runs (#
         { label: `pr:#${issue}`, phase: 'PR', agentType: 'pr-creator' },
       )
       prUrl = typeof prOut === 'string' ? (prOut.match(/https:\/\/github\.com\/\S+\/pull\/\d+/) || [null])[0] : null
-      if (!prUrl) log('WARNING: pr-creator returned no PR URL — Copilot loop will be SKIPPED; check the PR manually')
+      if (!prUrl) log('WARNING: pr-creator returned no PR URL — {{VOCAB_REVIEWER}} loop will be SKIPPED; check the PR manually')
     }
     // prFailed distinguishes "PR creation failed / URL not extracted" from a
     // deliberate pr:false run — both have prUrl:null in the result.
     result = { issue, branch: setup.branchName, spec: setup.specPath, converged: true, prUrl, prFailed: openPr && !prUrl }
 
-    // ─── Copilot Loop ────────────────────────────────────────────────────
-    // The repo ruleset auto-runs Copilot review on PR open AND on every
+    // ─── {{VOCAB_REVIEWER}} Loop ────────────────────────────────────────────────────
+    // The repo ruleset auto-runs {{VOCAB_REVIEWER}} review on PR open AND on every
     // push. Each resolve round pushes a fix commit, which triggers the next
     // review — so we loop: wait → check for new threads → resolve → repeat,
     // until a wait finds zero unresolved threads. Extracted as a function
     // because the Learn phase below can push one more commit AFTER this
-    // loop converges — that push re-triggers Copilot review like any other,
+    // loop converges — that push re-triggers {{VOCAB_REVIEWER}} review like any other,
     // so Learn re-enters this same loop (bounded) instead of ending the run
     // with an unhandled review round.
-    const runCopilotLoop = async (prNumber, maxRounds, labelPrefix) => {
+    const run{{VOCAB_REVIEWER}}Loop = async (prNumber, maxRounds, labelPrefix) => {
       let converged = false
       let outstanding = []
       for (let round = 1; round <= maxRounds; round++) {
         const check = await agent(
-          `You are the Copilot-review poller for PR #${prNumber} in ${REPO} (round ${labelPrefix}${round}). The PR just received a push; the repo ruleset makes Copilot review every push.
+          `You are the {{VOCAB_REVIEWER}}-review poller for PR #${prNumber} in ${REPO} (round ${labelPrefix}${round}). The PR just received a push; the repo ruleset makes {{VOCAB_REVIEWER}} review every push.
 1. Wait ~${COPILOT_WAIT_SECONDS}s for the review to land. Your shell has a per-call timeout, so wait in chunks: run \`sleep 100\` ${Math.ceil(COPILOT_WAIT_SECONDS / 100)} times. If foreground sleep is unavailable in your environment, substitute a slow poll (e.g. \`{{VCS_PR_CHECKS}}` or repeated timestamped \`gh api\` calls) totaling roughly the same wait.
 2. Then fetch UNRESOLVED review threads via GraphQL:
    \`{{VCS_LIST_REVIEW_THREADS}}`
@@ -521,33 +521,33 @@ Return {unresolved, threads:[{path, summary}]} — summary is the first ~300 cha
           // and clips summaries — mechanical work with no judgment. The
           // FIX agent below stays on Opus per the no-fable-in-fix-loops
           // rule; that is what the 2026-07-20 preference was protecting.
-          { label: `copilot-check:${labelPrefix}r${round}`, phase: 'Copilot Loop', schema: THREADS_SCHEMA, effort: 'low', model: 'haiku' },
+          { label: `copilot-check:${labelPrefix}r${round}`, phase: '{{VOCAB_REVIEWER}} Loop', schema: THREADS_SCHEMA, effort: 'low', model: 'haiku' },
         )
         if (!check) {
           // Same rationale as the fix-agent branch below: the PR already
           // exists — a dead poller must surface as converged=false with the
           // last-known threads, not a throw that discards the PR result.
-          log(`Copilot round ${labelPrefix}${round}: check agent failed — stopping the loop; verify threads manually`)
+          log(`{{VOCAB_REVIEWER}} round ${labelPrefix}${round}: check agent failed — stopping the loop; verify threads manually`)
           break
         }
         if (check.unresolved === 0) {
           converged = true
-          log(`Copilot loop converged: no new threads after round ${labelPrefix}${round}`)
+          log(`{{VOCAB_REVIEWER}} loop converged: no new threads after round ${labelPrefix}${round}`)
           break
         }
         outstanding = check.threads
-        log(`Copilot round ${labelPrefix}${round}: ${check.unresolved} unresolved thread(s) — resolving`)
-        pushHistory(`Copilot round ${labelPrefix}${round} (${check.unresolved} thread(s)):\n${threadsBlock(check.threads)}`)
+        log(`{{VOCAB_REVIEWER}} round ${labelPrefix}${round}: ${check.unresolved} unresolved thread(s) — resolving`)
+        pushHistory(`{{VOCAB_REVIEWER}} round ${labelPrefix}${round} (${check.unresolved} thread(s)):\n${threadsBlock(check.threads)}`)
         // NOT must(): the PR already exists — a dead fix agent here should
         // surface as copilot.converged=false with the outstanding threads,
         // not a throw that discards the valid PR outcome.
         const fixed = (await agent(
-          `Resolve the Copilot review feedback on PR #${prNumber} (branch ${setup.branchName}, issue #${issue}) in ${REPO}. ${IN_WT} Follow {{PATHS_SKILLS_DIR}}/resolve-review-feedback/SKILL.md EXACTLY: read every unresolved thread in full, fix or push back with written justification (never agree-then-ignore), run the pre-emptive sweep over touched files, ONE commit ("fix(#${issue}): apply Copilot review findings on PR #${prNumber} (round ${labelPrefix}${round})"), run typecheck + affected tests, push (rebase on the remote branch first if the push is rejected — accepted Copilot Autofix commits land remotely), then RESOLVE EVERY THREAD via the GraphQL resolveReviewThread mutation (verify zero unresolved afterward) and post the summary comment mapping findings to resolutions.
+          `Resolve the {{VOCAB_REVIEWER}} review feedback on PR #${prNumber} (branch ${setup.branchName}, issue #${issue}) in ${REPO}. ${IN_WT} Follow {{PATHS_SKILLS_DIR}}/resolve-review-feedback/SKILL.md EXACTLY: read every unresolved thread in full, fix or push back with written justification (never agree-then-ignore), run the pre-emptive sweep over touched files, ONE commit ("fix(#${issue}): apply {{VOCAB_REVIEWER}} review findings on PR #${prNumber} (round ${labelPrefix}${round})"), run typecheck + affected tests, push (rebase on the remote branch first if the push is rejected — accepted {{VOCAB_REVIEWER}} Autofix commits land remotely), then RESOLVE EVERY THREAD via the GraphQL resolveReviewThread mutation (verify zero unresolved afterward) and post the summary comment mapping findings to resolutions.
 Threads at last check:\n${threadsBlock(check.threads)}`,
-          { label: `copilot-fix:${labelPrefix}r${round}`, phase: 'Copilot Loop', agentType: 'developer', model: 'opus' },
+          { label: `copilot-fix:${labelPrefix}r${round}`, phase: '{{VOCAB_REVIEWER}} Loop', agentType: 'developer', model: 'opus' },
         ))
         if (fixed === null || fixed === undefined) {
-          log(`Copilot round ${labelPrefix}${round}: fix agent failed — stopping the loop; threads left for human review`)
+          log(`{{VOCAB_REVIEWER}} round ${labelPrefix}${round}: fix agent failed — stopping the loop; threads left for human review`)
           break
         }
       }
@@ -555,11 +555,11 @@ Threads at last check:\n${threadsBlock(check.threads)}`,
     }
 
     if (prUrl) {
-      enterPhase('Copilot Loop')
+      enterPhase('{{VOCAB_REVIEWER}} Loop')
       const prNumber = Number((prUrl.match(/\/pull\/(\d+)/) || [])[1])
-      result.copilot = await runCopilotLoop(prNumber, MAX_COPILOT_ROUNDS, '')
+      result.copilot = await run{{VOCAB_REVIEWER}}Loop(prNumber, MAX_COPILOT_ROUNDS, '')
       if (!result.copilot.converged) {
-        log(`Copilot loop hit the ${MAX_COPILOT_ROUNDS}-round cap with threads still arriving — human review needed`)
+        log(`{{VOCAB_REVIEWER}} loop hit the ${MAX_COPILOT_ROUNDS}-round cap with threads still arriving — human review needed`)
       }
 
       // ─── Learn (terminal phase) ────────────────────────────────────────
@@ -569,10 +569,10 @@ Threads at last check:\n${threadsBlock(check.threads)}`,
       // discard the shipped-PR result.
       enterPhase('Learn')
       const learned = await agent(
-        `Run the repo's /learn retrospective for PR #${prNumber} (issue #${issue}, branch ${setup.branchName}) in ${REPO}. ${IN_WT} Follow {{PATHS_SKILLS_DIR}}/learn/SKILL.md EXACTLY — but the harvest step is mostly done for you: this run accumulated every audit-round finding and every Copilot thread its poller observed, below. Use it as the primary harvest source; query GitHub only for what it lacks (e.g. thread resolutions/push-backs on the PR, accepted Autofix commits), not to re-fetch what's listed. Completeness check (mandatory): run ONE GraphQL enumeration of ALL review threads on the PR (resolved + unresolved) — any thread not already in the record was created and resolved between poller rounds and must still be harvested.
+        `Run the repo's /learn retrospective for PR #${prNumber} (issue #${issue}, branch ${setup.branchName}) in ${REPO}. ${IN_WT} Follow {{PATHS_SKILLS_DIR}}/learn/SKILL.md EXACTLY — but the harvest step is mostly done for you: this run accumulated every audit-round finding and every {{VOCAB_REVIEWER}} thread its poller observed, below. Use it as the primary harvest source; query GitHub only for what it lacks (e.g. thread resolutions/push-backs on the PR, accepted Autofix commits), not to re-fetch what's listed. Completeness check (mandatory): run ONE GraphQL enumeration of ALL review threads on the PR (resolved + unresolved) — any thread not already in the record was created and resolved between poller rounds and must still be harvested.
 
 === Harvest record (this run) ===
-${(() => { const tail = reviewHistory.slice(-20); const omitted = reviewHistory.length - tail.length; return (omitted > 0 ? `(${omitted} earlier round entries omitted for length — recover from GitHub if needed)\n\n` : '') + (tail.length ? tail.join('\n\n') : '(zero findings in every audit round and Copilot round this run observed)') })()}
+${(() => { const tail = reviewHistory.slice(-20); const omitted = reviewHistory.length - tail.length; return (omitted > 0 ? `(${omitted} earlier round entries omitted for length — recover from GitHub if needed)\n\n` : '') + (tail.length ? tail.join('\n\n') : '(zero findings in every audit round and {{VOCAB_REVIEWER}} round this run observed)') })()}
 === End harvest record ===
 
 Distill the recurrence-class lessons (cap 5, skip one-offs), dedup against existing {{PATHS_RULES_DIR}}/, {{PATHS_SKILLS_DIR}}/, and {{PATHS_AGENTS_DIR}}/ content (sharpen placement instead of duplicating), encode each lesson in its ONE right home per the skill's routing table (new rule files need a file-patterns.json entry AND a rule-budgets.json entry — introduction size +15%, added to totalCap), then COMMIT ON ${setup.branchName} ("learn(#${issue}): encode review lessons from PR #${prNumber}") and PUSH so the PR is updated with the changes. Finally post a PR comment titled "📚 Learn:" listing each lesson → destination file (or stating that zero lessons survived distillation, in which case commit nothing). Return {committed, summary}: committed=true ONLY if you pushed a lesson commit; summary is one paragraph listing the files you changed (or 'no lessons encoded').`,
@@ -586,25 +586,25 @@ Distill the recurrence-class lessons (cap 5, skip one-offs), dedup against exist
       } else {
         result.learn = { ran: true, committed: learned.committed, summary: String(learned.summary).slice(0, 500) }
         if (learned.committed) {
-          // The Learn push re-triggers Copilot review AFTER the loop above
+          // The Learn push re-triggers {{VOCAB_REVIEWER}} review AFTER the loop above
           // already converged. Re-enter the loop (small cap — lesson commits
           // are docs-only and rarely draw threads) so the run never reports
           // "PR ready for review" with an unhandled review round pending.
-          const post = await runCopilotLoop(prNumber, Math.min(3, MAX_COPILOT_ROUNDS), 'learn-')
+          const post = await run{{VOCAB_REVIEWER}}Loop(prNumber, Math.min(3, MAX_COPILOT_ROUNDS), 'learn-')
           result.copilot = post
           if (!post.converged) {
-            log('Copilot re-entry after the Learn push did not converge — human review needed')
+            log('{{VOCAB_REVIEWER}} re-entry after the Learn push did not converge — human review needed')
           }
         }
       }
 
       // ─── CI Gate (#1231) ───────────────────────────────────────────────
-      // The draft PR skipped CI throughout the Copilot loop (drafts skip
+      // The draft PR skipped CI throughout the {{VOCAB_REVIEWER}} loop (drafts skip
       // every ci.yml/security.yml job). Mark it ready — ready_for_review
       // fires the one merge-ref CI + security run — then babysit: watch
       // checks; on failure, fix + push. The fix push re-triggers BOTH CI
-      // (non-draft synchronize) and Copilot review (ruleset review_on_push),
-      // so each round re-converges Copilot too. Runs AFTER Learn so the
+      // (non-draft synchronize) and {{VOCAB_REVIEWER}} review (ruleset review_on_push),
+      // so each round re-converges {{VOCAB_REVIEWER}} too. Runs AFTER Learn so the
       // ready-triggered run tests the true final state (Learn's docs commit
       // lands while still draft, costing zero CI runs).
       enterPhase('CI Gate')
@@ -645,12 +645,12 @@ Failing checks:\n${status.failing.map((f) => `- ${f.name}: ${f.summary}`).join('
             break
           }
           if (fixed.committed) {
-            // The fix push re-triggered Copilot review — re-converge it before
+            // The fix push re-triggered {{VOCAB_REVIEWER}} review — re-converge it before
             // the next CI poll so the run never ends with an unhandled round.
-            const post = await runCopilotLoop(prNumber, Math.min(2, MAX_COPILOT_ROUNDS), `ci${round}-`)
+            const post = await run{{VOCAB_REVIEWER}}Loop(prNumber, Math.min(2, MAX_COPILOT_ROUNDS), `ci${round}-`)
             result.copilot = post
             if (!post.converged) {
-              log(`Copilot re-entry after CI-gate round ${round} did not converge — human review needed`)
+              log(`{{VOCAB_REVIEWER}} re-entry after CI-gate round ${round} did not converge — human review needed`)
             }
           }
         }

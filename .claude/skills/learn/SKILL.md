@@ -1,13 +1,13 @@
 ---
 name: learn
-description: Post-review retrospective — harvest every finding from a PR's review cycle (Copilot rounds, ralph audit passes, human threads), distill the recurrence-class lessons, and encode them into the repo's rules/skills/agents so the same mistakes stop happening. Runs automatically as the ship workflow's terminal phase; also runnable manually after any review cycle. Usage: /learn <PR number> [issue number]
+description: Post-review retrospective — harvest every finding from a PR's review cycle ({{VOCAB_REVIEWER}} rounds, ralph audit passes, human threads), distill the recurrence-class lessons, and encode them into the repo's rules/skills/agents so the same mistakes stop happening. Runs automatically as the ship workflow's terminal phase; also runnable manually after any review cycle. Usage: /learn <PR number> [issue number]
 user_invocable: true
 argument-hint: "<pr_number> [issue_number]"
 ---
 
 # Learn — encode review lessons so they don't recur
 
-Every review round on this repo is expensive: a Copilot round costs a
+Every review round on this repo is expensive: a {{VOCAB_REVIEWER}} round costs a
 wait+fix+resolve cycle; a ralph audit pass costs a full reviewer run. Most
 findings are *instances of a class* — and the repo already has the machinery
 to kill a class permanently: path-scoped rules in `{{PATHS_RULES_DIR}}/`, skill
@@ -23,7 +23,7 @@ harvest → distill → encode.
 ## When to run
 
 - **Automatically**: the `ship` workflow runs it as the terminal phase, after
-  the Copilot feedback loop ends.
+  the {{VOCAB_REVIEWER}} feedback loop ends.
 - **Manually**: after finishing a `/resolve-review-feedback` cycle or a
   ralph audit convergence, run `/learn <PR>`.
 
@@ -32,7 +32,7 @@ harvest → distill → encode.
 ### 1. Harvest — collect every finding from the cycle
 
 ```bash
-# All review threads (Copilot + human), including resolved ones:
+# All review threads ({{VOCAB_REVIEWER}} + human), including resolved ones:
 gh api repos/{{VCS_REPO_SLUG}}/pulls/<PR>/comments --paginate \
   --jq '.[] | {path, body: (.body | .[:600])}'
 
@@ -41,7 +41,7 @@ gh pr view <PR> --repo {{VCS_REPO_SLUG}} --json comments \
   --jq '.comments[] | select(.body | startswith("Resolved")) | .body'
 
 # Audit-loop fix commits on the branch (each message enumerates findings):
-git log origin/main..<branch> --oneline --grep "audit" --grep "Copilot" --grep "findings" -i
+git log origin/main..<branch> --oneline --grep "audit" --grep "{{VOCAB_REVIEWER}}" --grep "findings" -i
 # For merged PRs, use the squash commit body: git show <sha> --no-patch --format=%B
 ```
 
@@ -55,7 +55,7 @@ For each finding ask: **"Would a rule, checklist line, or grep have
 prevented this — and will the situation plausibly recur?"**
 
 - **Encode**: pattern mistakes (wrong API shape, missed companion edit,
-  convention violation, a category Copilot caught that our pre-emptive sweep
+  convention violation, a category {{VOCAB_REVIEWER}} caught that our pre-emptive sweep
   lacks, a workflow-ordering error like lock-before-status).
 - **Skip**: true one-offs (a typo, a merge race, a finding specific to one
   file's quirk). Encoding one-offs bloats the rules and dilutes the real
@@ -82,7 +82,7 @@ Three outcomes:
   append to it. Never duplicate a rule verbatim into a second home without
   a pointer — twins drift.
 - **Present and followed, finding was a false positive we pushed back on** →
-  if Copilot keeps raising it, add the push-back rationale to the relevant
+  if {{VOCAB_REVIEWER}} keeps raising it, add the push-back rationale to the relevant
   rule so future sessions can cite it instead of re-litigating (precedent:
   the "nullable JSONB union" note in backend-database.md exists exactly
   because two reviewers ping-ponged over it).
@@ -92,7 +92,7 @@ Three outcomes:
 | Lesson class | Destination |
 |---|---|
 | Code pattern (backend/frontend/schema/test) | The matching `{{PATHS_RULES_DIR}}/<area>.md` — follow house style: the rule, the WHY, a greppable proxy, `Precedent: PR #<P> r<R>` |
-| A category Copilot caught that our sweep lacks | `resolve-review-feedback/SKILL.md` step 3 — add a numbered check WITH a grep command |
+| A category {{VOCAB_REVIEWER}} caught that our sweep lacks | `resolve-review-feedback/SKILL.md` step 3 — add a numbered check WITH a grep command |
 | Spec-stage miss (missing companion file, wrong count, unregistered chain) | `create-spec/SKILL.md` pre-flight checklist (and `workflow.md` "Completeness traps" if it's an incomplete-chain class) |
 | Agent behavior miss (wrong tool, skipped step, bad ordering) | The `{{PATHS_AGENTS_DIR}}/<agent>.md` definition |
 | Workflow/pipeline ordering (locks, board, CI) | `{{PATHS_RULES_DIR}}/workflow.md` or the ship workflow's prompts in `.claude/workflows/ship.js` |
@@ -146,9 +146,9 @@ git push
 
 Commit to the **current branch**: when run as ship's terminal phase the PR is
 still open, so the lessons ride along and merge with the feature. A rules
-edit may trigger one more Copilot round — that's fine; docs-only commits
+edit may trigger one more {{VOCAB_REVIEWER}} round — that's fine; docs-only commits
 rarely draw comments, and if one does, `/resolve-review-feedback` handles it
-(the ship workflow re-enters its Copilot loop automatically after a Learn push).
+(the ship workflow re-enters its {{VOCAB_REVIEWER}} loop automatically after a Learn push).
 
 ### 6. Post the PR comment
 

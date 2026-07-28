@@ -1,6 +1,6 @@
 ---
 name: resolve-review-feedback
-description: Address {{VOCAB_REVIEWER}} review feedback on a PR — read every thread, fix or push back with justification, commit + push, then EXPLICITLY RESOLVE every thread via the GraphQL `resolveReviewThread` mutation. Run when the user says "resolve copilot feedback" or similar.
+description: Address code-review feedback on a PR — read every thread, fix or push back with justification, commit + push, then EXPLICITLY RESOLVE every thread via the GraphQL `resolveReviewThread` mutation. Run when the user says "resolve copilot feedback" or similar.
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
@@ -9,18 +9,18 @@ description: Address {{VOCAB_REVIEWER}} review feedback on a PR — read every t
      ports; the exact invocation is not. -->
 
 
-# Resolve Copilot Feedback
+# Resolve {{VOCAB_REVIEWER}} Feedback
 
-The single rule that gets forgotten: **resolving Copilot's threads is a separate API call from pushing the fixes.** Pushing a commit does NOT close the threads — the conversation stays "open" until you mutate `resolveReviewThread` for each one. A reviewer scrolling the PR sees a wall of unresolved threads, has no idea which were addressed, and either re-reviews unnecessarily or assumes you missed them.
+The single rule that gets forgotten: **resolving {{VOCAB_REVIEWER}}'s threads is a separate API call from pushing the fixes.** Pushing a commit does NOT close the threads — the conversation stays "open" until you mutate `resolveReviewThread` for each one. A reviewer scrolling the PR sees a wall of unresolved threads, has no idea which were addressed, and either re-reviews unnecessarily or assumes you missed them.
 
 This skill codifies the full loop so that step never gets skipped.
 
 ## When to run
 
 - User says "resolve copilot feedback", "address copilot review", "fix copilot's comments", or similar.
-- A Copilot review just landed on a PR and the user wants it cleared.
+- A {{VOCAB_REVIEWER}} review just landed on a PR and the user wants it cleared.
 
-If no review exists yet: don't fabricate one. Tell the user there's nothing to resolve, optionally trigger a re-request (`gh api --method POST repos/<owner>/<repo>/pulls/<N>/requested_reviewers -f 'reviewers[]=Copilot'`).
+If no review exists yet: don't fabricate one. Tell the user there's nothing to resolve, optionally trigger a re-request (`gh api --method POST repos/<owner>/<repo>/pulls/<N>/requested_reviewers -f 'reviewers[]={{VOCAB_REVIEWER}}'`).
 
 ## Process
 
@@ -36,7 +36,7 @@ This returns inline comments (the ones tied to specific file:line). For the revi
 gh api repos/<owner>/<repo>/pulls/<N>/reviews --jq '.[] | {user: .user.login, state, body: (.body | .[:200])}'
 ```
 
-Read each one fully. Don't skim — Copilot is dense and a single sentence often contains the real concern + the suggested fix + the edge case to consider. Treat its review like a senior engineer's: most findings are real, a few are wrong, none are noise.
+Read each one fully. Don't skim — {{VOCAB_REVIEWER}} is dense and a single sentence often contains the real concern + the suggested fix + the edge case to consider. Treat its review like a senior engineer's: most findings are real, a few are wrong, none are noise.
 
 ### 2. Decide per-thread: fix, push back, or defer
 
@@ -48,9 +48,9 @@ For each comment, pick one:
 
 Don't agree-then-quietly-ignore. Either the change is in the diff or the thread carries a written justification.
 
-### 3. Pre-emptive sweep — find what Copilot will catch NEXT round
+### 3. Pre-emptive sweep — find what {{VOCAB_REVIEWER}} will catch NEXT round
 
-**This is the step that gets skipped, which is why the same PR cycles through 5–8 review rounds.** Copilot reviews from a snapshot; each round it catches a *different category* of issue that you didn't proactively audit for. The single biggest behavioral lever for shortening the cycle is to run a focused checklist over the touched files BEFORE the commit, so the same push closes Copilot's findings AND pre-empts the next round.
+**This is the step that gets skipped, which is why the same PR cycles through 5–8 review rounds.** {{VOCAB_REVIEWER}} reviews from a snapshot; each round it catches a *different category* of issue that you didn't proactively audit for. The single biggest behavioral lever for shortening the cycle is to run a focused checklist over the touched files BEFORE the commit, so the same push closes {{VOCAB_REVIEWER}}'s findings AND pre-empts the next round.
 
 Apply each category to every file in the diff. Checks 3.1–3.11 were each caught by Copilot on PR #707 across rounds 1–8; 3.12–3.14 were each caught on PR #988 across rounds 1–8 (where fix commits repeatedly seeded the next round's findings); 3.15 was caught on PR #1244 (and, for half of it, on PR #1227 before that).
 
@@ -100,7 +100,7 @@ For each hit: trace the input edge case where every character is stripped. Add a
 
 **3.5 — Comment / code drift**
 
-When you change behavior, re-read the file header and any step-numbered comments. Re-read description / summary fields. A common Copilot finding is "comment says X but code does Y".
+When you change behavior, re-read the file header and any step-numbered comments. Re-read description / summary fields. A common {{VOCAB_REVIEWER}} finding is "comment says X but code does Y".
 
 ```bash
 # All files in the diff with multi-line JSDoc / star-comments at the top.
@@ -225,7 +225,7 @@ If the fix added `.min(1)` / `.refine` / `.nullable` to a Zod schema, grep `{{PA
 
 **3.15 — Committed-doc hygiene: mutable state + machine-specific paths**
 
-Applies to every `.md` in the diff — specs, `{{PATHS_CONTEXT_DIR}}/*`, deliverable docs. Copilot reliably flags both of these, and both are one grep away.
+Applies to every `.md` in the diff — specs, `{{PATHS_CONTEXT_DIR}}/*`, deliverable docs. {{VOCAB_REVIEWER}} reliably flags both of these, and both are one grep away.
 
 ```bash
 # Mutable agent-label / board-status assertions baked into a doc
@@ -240,14 +240,14 @@ Precedent: PR #1244 (#1191) Copilot round 1 — three of five threads were this 
 
 ---
 
-Add findings from this sweep to the upcoming commit alongside Copilot's flagged threads. The summary comment in step 6 mentions them under a "Sweep additions" section.
+Add findings from this sweep to the upcoming commit alongside {{VOCAB_REVIEWER}}'s flagged threads. The summary comment in step 6 mentions them under a "Sweep additions" section.
 
 ### 4. Commit + push
 
 Group all the fixes into ONE commit per review round — not one commit per thread. The commit message should mirror the structure of the review (numbered findings) so a reader can map commit ↔ thread:
 
 ```
-fix(#<N>): apply Copilot review findings on PR #<P> (<count> findings)
+fix(#<N>): apply {{VOCAB_REVIEWER}} review findings on PR #<P> (<count> findings)
 
 1. <thread topic> — <one-line fix description>
 2. <thread topic> — <one-line fix description>
@@ -256,7 +256,7 @@ fix(#<N>): apply Copilot review findings on PR #<P> (<count> findings)
 
 ### 5. Resolve every thread
 
-**This is the step that gets forgotten.** the tracker's PR UI shows threads as "Resolved" only after a `resolveReviewThread` mutation. Pushing a commit doesn't do it.
+**This is the step that gets forgotten.** The PR UI shows threads as "Resolved" only after a `resolveReviewThread` mutation. Pushing a commit doesn't do it.
 
 First, list the open thread IDs (NOT the comment IDs from step 1 — different IDs):
 
@@ -286,13 +286,13 @@ Each call returns `{"thread":{"isResolved":true}}` on success. Bail if any retur
 
 ### 6. Summary comment
 
-Post one comment on the PR mapping each Copilot finding to its resolution. If the pre-emptive sweep (step 3) surfaced additional findings, append them under "Sweep additions" so the maintainer can see what was caught without a Copilot round:
+Post one comment on the PR mapping each {{VOCAB_REVIEWER}} finding to its resolution. If the pre-emptive sweep (step 3) surfaced additional findings, append them under "Sweep additions" so the maintainer can see what was caught without a {{VOCAB_REVIEWER}} round:
 
 ```markdown
-Resolved all <N> Copilot threads in commit `<sha>`:
+Resolved all <N> {{VOCAB_REVIEWER}} threads in commit `<sha>`:
 
-**1. <Copilot's finding topic>** — <how it was addressed>
-**2. <Copilot's finding topic>** — <how it was addressed>
+**1. <{{VOCAB_REVIEWER}}'s finding topic>** — <how it was addressed>
+**2. <{{VOCAB_REVIEWER}}'s finding topic>** — <how it was addressed>
 ...
 
 ### Sweep additions (pre-empting next round)
@@ -303,7 +303,7 @@ Resolved all <N> Copilot threads in commit `<sha>`:
 Verified: <one-line test/typecheck status>
 ```
 
-Keep entries terse. The thread itself already has Copilot's full text; the summary is the index.
+Keep entries terse. The thread itself already has {{VOCAB_REVIEWER}}'s full text; the summary is the index.
 
 ## Hard rules
 
@@ -312,7 +312,7 @@ Keep entries terse. The thread itself already has Copilot's full text; the summa
 3. **Don't resolve threads you didn't address.** If a thread is genuinely out-of-scope, file a follow-up issue and reference it in the resolution comment — don't quietly close.
 4. **Group commits by review round, not by thread.** Three commits for three findings makes git log noise; one commit with a structured message preserves the mapping.
 5. **One PR summary comment, not N per-thread replies.** Use the comment as the index; the threads carry the detail.
-6. **Re-running with no review present is a no-op.** Don't generate findings to address — if Copilot hasn't reviewed, prompt the user to trigger a re-request and stop.
+6. **Re-running with no review present is a no-op.** Don't generate findings to address — if {{VOCAB_REVIEWER}} hasn't reviewed, prompt the user to trigger a re-request and stop.
 
 ## Verifying the resolution stuck
 
@@ -332,9 +332,9 @@ Should print `0`. If non-zero, an unresolve mutation didn't take — re-run for 
 
 ## Edge cases
 
-- **Copilot left a review-level summary but no inline comments** — nothing to resolve. The review itself can't be "resolved"; the threads (inline) are what get resolved. Reply with `gh pr comment` if you want to acknowledge the summary.
+- **{{VOCAB_REVIEWER}} left a review-level summary but no inline comments** — nothing to resolve. The review itself can't be "resolved"; the threads (inline) are what get resolved. Reply with `gh pr comment` if you want to acknowledge the summary.
 - **A second Copilot review round lands during your fix work** — re-list threads after pushing; new ones from round 2 will be in the open set. Don't assume the list you fetched at the start is complete.
-- **A thread author is a human reviewer (not Copilot)** — same flow applies. The skill is named "resolve-review-feedback" because that's the dominant case, but every reviewer-thread cleared via this skill follows the same five steps.
+- **A thread author is a human reviewer (not {{VOCAB_REVIEWER}})** — same flow applies. The skill is named "resolve-review-feedback" because that's the dominant case, but every reviewer-thread cleared via this skill follows the same five steps.
 - **GraphQL mutation returns `Could not resolve to <type> node` for the thread ID** — you're using the comment's `databaseId` instead of the thread's GraphQL `id`. Re-fetch with the query in step 5.
 - **`gh api` returns 403 / 422 on the mutation** — the GH token needs `pull_requests: write` scope. Check `gh auth status`; the project token usually has it.
 

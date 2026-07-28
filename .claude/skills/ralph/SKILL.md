@@ -53,12 +53,12 @@ Ralph writes to `./ralph.log` (configurable via `--log`). The log is `*.log` so 
 - Tool descriptions (what Claude is doing inside each iteration): `tail -c 50000 ralph.log | grep -oE '"description":"[^"]{10,120}"' | tail -20`
 - Audit findings produced by the run, both files per pass:
   - `.ai/audit-findings/issue-ID-pass-K.md` — architectural auditor (Sonnet)
-  - `.ai/audit-findings/issue-ID-pass-K-line.md` — line-reviewer (Opus, Copilot-style)
+  - `.ai/audit-findings/issue-ID-pass-K-line.md` — line-reviewer (Opus, {{VOCAB_REVIEWER}}-style)
   - Both persist across worktree cleanup.
 
 ## How audit mode works under the hood
 
-Each audit pass runs **two reviewers in series** — the architectural auditor and the line-reviewer — and the pass is only considered clean when **both** report no findings. This is the structural fix for the "Copilot finds nits Ralph misses" gap: the auditor (Sonnet, broad context, 5 dimensions) catches spec/architecture issues; the line-reviewer (Opus, diff-anchored, deliberately noisy) catches line-level nits. Together they cover what Copilot would flag in a typical PR review.
+Each audit pass runs **two reviewers in series** — the architectural auditor and the line-reviewer — and the pass is only considered clean when **both** report no findings. This is the structural fix for the "{{VOCAB_REVIEWER}} finds nits Ralph misses" gap: the auditor (Sonnet, broad context, 5 dimensions) catches spec/architecture issues; the line-reviewer (Opus, diff-anchored, deliberately noisy) catches line-level nits. Together they cover what {{VOCAB_REVIEWER}} would flag in a typical PR review.
 
 1. Resolve target branch from `--branch X` or `--pr M` (the latter via `{{VCS_VIEW_PR}}`). One or the other is **required** unless `--no-worktree` is passed.
 2. `git fetch origin <branch>`, then `git worktree add .claude/worktrees/ralph-<issue>-<pid> <branch>`. Fails fast if the branch is already checked out in another worktree.
