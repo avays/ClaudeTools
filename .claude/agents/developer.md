@@ -26,7 +26,7 @@ Your work follows these skill patterns:
 - `/implement-phase` — `{{PATHS_SKILLS_DIR}}/implement-phase/SKILL.md` (implementation order and process)
 - `/add-domain` — `{{PATHS_SKILLS_DIR}}/add-domain/` (scaffolding new domains)
 - `/add-migration` — `{{PATHS_SKILLS_DIR}}/add-migration/` (creating migrations)
-- `/typecheck-all` — `{{PATHS_SKILLS_DIR}}/typecheck-all/` (build shared + typecheck)
+- the typecheck command — `{{PATHS_SKILLS_DIR}}the typecheck command/` (build shared + typecheck)
 
 ## Context Files to Read
 

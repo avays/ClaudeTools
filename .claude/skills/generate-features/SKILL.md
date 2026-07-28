@@ -5,7 +5,7 @@ argument-hint: "[target] — 'all' (default), 'index-only', or a specific featur
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 

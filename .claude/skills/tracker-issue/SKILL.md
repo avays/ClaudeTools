@@ -1,11 +1,11 @@
 ---
-name: github-issue
+name: tracker-issue
 description: Create, update, list, or close {{VOCAB_ISSUES}} on {{VCS_REPO_SLUG}}
 user_invocable: true
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 
@@ -15,11 +15,11 @@ user_invocable: true
 Manage {{VOCAB_ISSUES}} on the `{{VCS_REPO_SLUG}}` repository.
 
 ## Usage
-- `/github-issue create [title]` — Create a new issue
-- `/github-issue list` — List open issues
-- `/github-issue view [number]` — View issue details
-- `/github-issue close [number]` — Close an issue
-- `/github-issue update [number]` — Update an issue
+- `/tracker-issue create [title]` — Create a new issue
+- `/tracker-issue list` — List open issues
+- `/tracker-issue view [number]` — View issue details
+- `/tracker-issue close [number]` — Close an issue
+- `/tracker-issue update [number]` — Update an issue
 
 ## Process
 

@@ -75,7 +75,6 @@ case "$PKG" in
   none) PKG_INSTALL=""; PKG_BUILD=""; PKG_TYPECHECK=""; PKG_TEST="" ;;
   *) echo "ERROR: unknown --pkg '$PKG'" >&2; exit 2 ;;
 esac
-PKG_SYNC_AGENTS=""   # only if you run a derived-instructions sync; see scripts/
 
 # Profile supplies every TRACKER_* / VCS_* / VOCAB_* value. It is sourced AFTER
 # the vars above because several profile entries interpolate them.
@@ -84,7 +83,7 @@ PKG_SYNC_AGENTS=""   # only if you run a derived-instructions sync; see scripts/
 
 TOKENS="PROJECT_NAME PROJECT_MAIN_BRANCH VCS_REPO_SLUG
 PATHS_RULES_DIR PATHS_SKILLS_DIR PATHS_AGENTS_DIR PATHS_SPECS_DIR PATHS_CONTEXT_DIR PATHS_SRC_GLOBS
-PKG_INSTALL PKG_BUILD PKG_TYPECHECK PKG_TEST PKG_SYNC_AGENTS
+PKG_INSTALL PKG_BUILD PKG_TYPECHECK PKG_TEST
 VOCAB_ISSUE VOCAB_ISSUES VOCAB_ISSUE_CAP VOCAB_PR VOCAB_PRS VOCAB_BOARD VOCAB_REVIEWER
 TRACKER_ISSUE_REF_FORMAT TRACKER_ISSUE_URL TRACKER_VIEW_ISSUE TRACKER_LIST_ISSUES
 TRACKER_CREATE_ISSUE TRACKER_COMMENT_ISSUE TRACKER_CLOSE_ISSUE TRACKER_ADD_LABEL
@@ -156,21 +155,85 @@ if [ -d "$RULES" ]; then
   } > "$RULES/rule-budgets.json"
   echo "  generated $PATHS_RULES_DIR/rule-budgets.json"
 
-  # file-patterns.json — every rule always-on by default. Narrow the globs for
-  # stack-specific rules afterwards; a rule with no entry is never loaded.
+  # file-patterns.json — PATH SCOPING, and the point of it.
+  #
+  # A rule scoped "**" loads into every session and every review prompt. Make
+  # them all "**" and the installed rules are ~300 KB of always-on context —
+  # which is the exact failure the budget script exists to prevent, shipped as
+  # the default. Only genuinely cross-cutting rules (process, review
+  # discipline) are always-on; everything else is scoped to the files it
+  # governs. A rule with NO entry is never loaded at all.
+  #
+  # Unknown rule names fall through to "**" — deliberate: a rule you added
+  # yourself should load until you decide where it belongs, rather than
+  # silently going dark.
+  glob_for() {
+    case "$1" in
+      architecture-principles|workflow|response-conventions) echo '**' ;;
+      testing-discipline|testing-vitest) echo '**/*.test.*,**/*.spec.*,**/__tests__/**' ;;
+      backend-api|agent-skills)   echo "$PATHS_SRC_GLOBS/**/*.routes.ts" ;;
+      backend-database)           echo "$PATHS_SRC_GLOBS/**/*.repository.ts,$PATHS_SRC_GLOBS/**/db.ts" ;;
+      backend-general|shared-types) echo "$PATHS_SRC_GLOBS/**/*.ts" ;;
+      delete-lifecycle)           echo "$PATHS_SRC_GLOBS/**/*.routes.ts,$PATHS_SRC_GLOBS/**/*.service.ts,$PATHS_SRC_GLOBS/**/*.repository.ts" ;;
+      integration-adapters)       echo "$PATHS_SRC_GLOBS/**/providers/**" ;;
+      registry)                   echo "$PATHS_SRC_GLOBS/**/registry.ts,$PATHS_SRC_GLOBS/**/definitions/**" ;;
+      frontend)                   echo "$PATHS_SRC_GLOBS/**/*.tsx" ;;
+      frontend-components)        echo "$PATHS_SRC_GLOBS/**/components/**" ;;
+      migrations)                 echo 'migrations/**,**/migrations/**' ;;
+      security-scanning)          echo '.github/**,*.toml,.trivyignore,.gitleaks.toml,.semgrepignore,.hadolint.yaml' ;;
+      railway)                    echo 'Dockerfile*,docker-compose*,railway.*,*.toml' ;;
+      *)                          echo '**' ;;
+    esac
+  }
   {
     echo '{'
     first=1
     for f in "$RULES"/*.md; do
       [ -e "$f" ] || continue
+      n=$(basename "$f" .md)
       [ "$first" -eq 1 ] || echo ','
       first=0
-      printf '  "%s": "**"' "$(basename "$f" .md)"
+      printf '  "%s": "%s"' "$n" "$(glob_for "$n")"
     done
     echo
     echo '}'
   } > "$RULES/file-patterns.json"
-  echo "  generated $PATHS_RULES_DIR/file-patterns.json"
+  alwayson=$(grep -c '"\*\*"' "$RULES/file-patterns.json" || true)
+  echo "  generated $PATHS_RULES_DIR/file-patterns.json ($alwayson always-on, rest path-scoped)"
+fi
+
+# --- .ai/ skeleton -----------------------------------------------------------
+# Nearly every skill reads or writes these two directories. Without them a
+# fresh install has agents told to update files under paths that don't exist.
+for d in "$PATHS_SPECS_DIR" "$PATHS_CONTEXT_DIR"; do
+  [ -d "$TARGET/$d" ] && continue
+  mkdir -p "$TARGET/$d"
+  echo "  created $d/"
+done
+if [ ! -e "$TARGET/$PATHS_CONTEXT_DIR/README.md" ]; then
+  cat > "$TARGET/$PATHS_CONTEXT_DIR/README.md" <<CTXEOF
+# Project context
+
+Long-lived state — what exists right now. Distinct from the other agent-facing
+text, and keeping them separate is what stops the root doc growing without
+bound:
+
+| Lives in | Holds | Changes |
+|---|---|---|
+| \`CLAUDE.md\` | A lean index. Pointers, not content. | Rarely |
+| \`$PATHS_RULES_DIR/\` | How to write code here | On a \`/learn\` cycle |
+| \`$PATHS_CONTEXT_DIR/\` (here) | Schema, endpoints, current state | Every feature |
+| \`$PATHS_SPECS_DIR/\` | What one feature will do | Per feature, then frozen |
+
+Add the files that are true for your project — commonly \`BUILD_STATE.md\`,
+\`CHANGELOG.md\` (the per-feature detail that must NOT live in \`CLAUDE.md\`),
+\`SCHEMA.md\`, \`API_ENDPOINTS.md\`, \`DEPLOYMENT.md\`, \`DEFERRED_ITEMS.md\`.
+
+**A stale context file is worse than a missing one.** An agent trusts these, and
+a stale \`SCHEMA.md\` produces confidently wrong code. Refresh it
+(\`/update-context\`) or put a dated staleness note at the top.
+CTXEOF
+  echo "  created $PATHS_CONTEXT_DIR/README.md"
 fi
 
 # --- frozen headings ---------------------------------------------------------
@@ -200,7 +263,10 @@ cat <<EOF
 Done. Next:
   1. Read $PATHS_RULES_DIR/workflow.md — it is the spine, and it now names your
      lock mechanism: $TRACKER_LOCK_MECHANISM
-  2. Delete the rules that don't apply to your stack. They're just files.
-  3. Narrow the globs in $PATHS_RULES_DIR/file-patterns.json (all "**" by default).
-  4. Commit, then run scripts/build-frozen-headings.sh.
+  2. Delete the rules that don't apply to your stack. They're just files —
+     drop the entry from file-patterns.json and rule-budgets.json too.
+  3. Check the globs in $PATHS_RULES_DIR/file-patterns.json against your layout.
+     Only cross-cutting rules are always-on; the rest are scoped to
+     '$PATHS_SRC_GLOBS'. A rule with no entry is never loaded.
+  4. Commit, then run scripts/build-frozen-headings.sh (it reads tracked files).
 EOF

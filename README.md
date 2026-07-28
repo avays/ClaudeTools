@@ -21,7 +21,7 @@ must be computed rather than shipped.
 .claude/skills/    19 workflow skills (/create-spec, /audit-phase, /learn, /ship, ...)
 .claude/agents/    10 agent definitions (spec-writer, developer, auditor, ...)
 .claude/workflows/ ship.js — the deterministic multi-agent pipeline
-scripts/           the governance gates, ralph.sh, sync-agent-instructions.mjs
+scripts/           ralph.sh + the 4 rule-governance gates
 profiles/          github.env | jira.env | none.env — the placeholder values
 setup.sh           copy + substitute
 ```
@@ -50,8 +50,11 @@ wrong:
 
 - **`rule-budgets.json`** — caps are byte counts and substitution changes byte
   counts, so they're computed from what actually landed (+15%).
-- **`file-patterns.json`** — every rule `"**"` by default; narrow the globs for
-  stack-specific ones afterwards. A rule with no entry is never loaded.
+- **`file-patterns.json`** — path scoping. Only cross-cutting rules (process,
+  review discipline) are always-on; the rest are scoped to your `--src` globs.
+  This matters: all-`"**"` would load ~310 KB into every session and review
+  prompt, which is the exact failure the budget script exists to prevent. A
+  rule with no entry is never loaded at all.
 
 Then commit and run `scripts/build-frozen-headings.sh` — it reads tracked
 files, so it needs one commit first.
@@ -149,3 +152,7 @@ copy the file across and re-apply the placeholders by hand — the substitution
 table is `profiles/*.env` plus the paths in `setup.sh`. There's deliberately no
 sync tool; the volume is low and reverse-substitution is lossy enough that a
 human should look at it.
+
+`setup.sh` also creates `.ai/specs/` and `.ai/context/` — nearly every skill
+reads or writes them, so without the directories a fresh install has agents
+updating paths that don't exist.

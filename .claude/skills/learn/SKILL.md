@@ -11,11 +11,11 @@ Every review round on this repo is expensive: a Copilot round costs a
 wait+fix+resolve cycle; a ralph audit pass costs a full reviewer run. Most
 findings are *instances of a class* — and the repo already has the machinery
 to kill a class permanently: path-scoped rules in `{{PATHS_RULES_DIR}}/`, skill
-checklists (create-spec pre-flight, resolve-copilot-feedback sweep), and
+checklists (create-spec pre-flight, resolve-review-feedback sweep), and
 agent definitions. This skill is the feedback edge that actually writes the
 lesson down where the next agent will see it.
 
-Precedent for the whole idea: `resolve-copilot-feedback` step 3 exists
+Precedent for the whole idea: `resolve-review-feedback` step 3 exists
 because PR #707 cycled through 8 Copilot rounds; each check in that sweep is
 one encoded lesson. `/learn` generalizes that: after every review cycle,
 harvest → distill → encode.
@@ -24,7 +24,7 @@ harvest → distill → encode.
 
 - **Automatically**: the `ship` workflow runs it as the terminal phase, after
   the Copilot feedback loop ends.
-- **Manually**: after finishing a `/resolve-copilot-feedback` cycle or a
+- **Manually**: after finishing a `/resolve-review-feedback` cycle or a
   ralph audit convergence, run `/learn <PR>`.
 
 ## Process
@@ -92,7 +92,7 @@ Three outcomes:
 | Lesson class | Destination |
 |---|---|
 | Code pattern (backend/frontend/schema/test) | The matching `{{PATHS_RULES_DIR}}/<area>.md` — follow house style: the rule, the WHY, a greppable proxy, `Precedent: PR #<P> r<R>` |
-| A category Copilot caught that our sweep lacks | `resolve-copilot-feedback/SKILL.md` step 3 — add a numbered check WITH a grep command |
+| A category Copilot caught that our sweep lacks | `resolve-review-feedback/SKILL.md` step 3 — add a numbered check WITH a grep command |
 | Spec-stage miss (missing companion file, wrong count, unregistered chain) | `create-spec/SKILL.md` pre-flight checklist (and `workflow.md` "Completeness traps" if it's an incomplete-chain class) |
 | Agent behavior miss (wrong tool, skipped step, bad ordering) | The `{{PATHS_AGENTS_DIR}}/<agent>.md` definition |
 | Workflow/pipeline ordering (locks, board, CI) | `{{PATHS_RULES_DIR}}/workflow.md` or the ship workflow's prompts in `.claude/workflows/ship.js` |
@@ -135,8 +135,7 @@ rule that contradicted the pr-creator PR-body template in the same file.
 
 ### 5. Sync + commit
 
-```bash
-{{PKG_SYNC_AGENTS}}          # regenerate AGENTS.md / .github / .agents / .codex
+```bash # regenerate AGENTS.md / .github / .agents / .codex
 git add -A
 git commit -m "learn(#<issue>): encode review lessons from PR #<P>
 
@@ -148,7 +147,7 @@ git push
 Commit to the **current branch**: when run as ship's terminal phase the PR is
 still open, so the lessons ride along and merge with the feature. A rules
 edit may trigger one more Copilot round — that's fine; docs-only commits
-rarely draw comments, and if one does, `/resolve-copilot-feedback` handles it
+rarely draw comments, and if one does, `/resolve-review-feedback` handles it
 (the ship workflow re-enters its Copilot loop automatically after a Learn push).
 
 ### 6. Post the PR comment
@@ -189,7 +188,7 @@ cycle is a valid outcome, and empty learn commits are noise.
    preserves every normative statement, greppable proxy, precedent ref,
    and operational fact (see `{{PATHS_SPECS_DIR}}/rules-context-slimming.md`
    preservation invariants) is not weakening.
-5. **Always `{{PKG_SYNC_AGENTS}}` before committing** — a stale generated file
+5. **Always ` ` before committing** — a stale generated file
    fails CI (`agent-instructions-sync`).
 6. **Before committing, run `scripts/check-rule-budget.sh`.** If the edited
    file exceeds its per-file budget (`{{PATHS_RULES_DIR}}/rule-budgets.json`),

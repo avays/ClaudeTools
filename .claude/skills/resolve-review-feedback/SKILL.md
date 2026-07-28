@@ -1,10 +1,10 @@
 ---
-name: resolve-copilot-feedback
+name: resolve-review-feedback
 description: Address {{VOCAB_REVIEWER}} review feedback on a PR — read every thread, fix or push back with justification, commit + push, then EXPLICITLY RESOLVE every thread via the GraphQL `resolveReviewThread` mutation. Run when the user says "resolve copilot feedback" or similar.
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 
@@ -334,7 +334,7 @@ Should print `0`. If non-zero, an unresolve mutation didn't take — re-run for 
 
 - **Copilot left a review-level summary but no inline comments** — nothing to resolve. The review itself can't be "resolved"; the threads (inline) are what get resolved. Reply with `gh pr comment` if you want to acknowledge the summary.
 - **A second Copilot review round lands during your fix work** — re-list threads after pushing; new ones from round 2 will be in the open set. Don't assume the list you fetched at the start is complete.
-- **A thread author is a human reviewer (not Copilot)** — same flow applies. The skill is named "resolve-copilot-feedback" because that's the dominant case, but every reviewer-thread cleared via this skill follows the same five steps.
+- **A thread author is a human reviewer (not Copilot)** — same flow applies. The skill is named "resolve-review-feedback" because that's the dominant case, but every reviewer-thread cleared via this skill follows the same five steps.
 - **GraphQL mutation returns `Could not resolve to <type> node` for the thread ID** — you're using the comment's `databaseId` instead of the thread's GraphQL `id`. Re-fetch with the query in step 5.
 - **`gh api` returns 403 / 422 on the mutation** — the GH token needs `pull_requests: write` scope. Check `gh auth status`; the project token usually has it.
 

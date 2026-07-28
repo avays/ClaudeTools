@@ -7,14 +7,14 @@ permissionMode: bypassPermissions
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 
 
 > **Host-specific commands.** The invocations below are the tracker's, kept verbatim
 > because they are the ones that have actually been run in anger. If your
-> `claudetools.config.json` names a different tracker or code host, substitute
+> you installed with a different tracker profile or code host, substitute
 > the equivalent from your config — `TRACKER_VIEW_ISSUE`, `TRACKER_ADD_LABEL`,
 > `VCS_CREATE_PR`, and friends hold your host's real commands. The *contract*
 > each step implements (acquire the lock before the status move, release on

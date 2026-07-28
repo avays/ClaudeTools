@@ -31,9 +31,10 @@ free/OSS and reports via job logs + the Actions job summary
 | **Hadolint** | Dockerfile best-practice lint | All 6 Dockerfiles in the repo |
 | **Dependabot** | Automatic update PRs (npm workspace root + `github-actions` action pins) | Weekly, targets `main` |
 
-## Running the scanners locally (`pnpm security:scan`)
+## Running the scanners locally
 
-`scripts/security-scan.sh` (aliased `pnpm security:scan`, #1123) mirrors this
+A local runner script (not shipped here — it was specific to the upstream repo's
+CI) can mirror this
 workflow: all five scanners, same configs, Docker-based except host-run `pnpm
 audit`; keeps going on failure and prints a PASS/FAIL/INFO summary. Use it to
 reproduce a CI security failure or pre-flight a push.

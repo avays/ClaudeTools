@@ -598,9 +598,7 @@ fixture was rewritten to use literal byte counts. CodeQL flagged it.
 # Detect the trigger
 git diff origin/<base>...HEAD --name-only \
   | grep -E '^(CLAUDE\.md|\.claude/(rules|skills|agents)/)' > /tmp/sync-trigger
-if [ -s /tmp/sync-trigger ]; then
-  {{PKG_SYNC_AGENTS}}
-  git diff --name-only AGENTS.md .agents/ .codex/ .github/ \
+if [ -s /tmp/sync-trigger ]; then git diff --name-only AGENTS.md .agents/ .codex/ .github/ \
     | tee /tmp/sync-stale
   if [ -s /tmp/sync-stale ]; then
     echo "STALE: regenerate + commit the above files"
@@ -610,7 +608,7 @@ fi
 ```
 
 Precedent: PR #684 updated `CLAUDE.md` Current Focus during the
-context-update step but did not re-run `{{PKG_SYNC_AGENTS}}`, breaking the
+context-update step but did not re-run ` `, breaking the
 `agent-instructions-sync` CI job. The check is a one-line command;
 running it locally before push avoids a red-CI round trip.
 

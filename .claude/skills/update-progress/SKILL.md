@@ -87,7 +87,7 @@ lives in `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md`; the phase + feature status table 
      numbers, no stacked-on/merge-status narrative. Those go stale the
      moment a PR merges or retargets and belong in `CHANGELOG.md`.
      (PR #988 burned two Copilot review rounds on this line alone.)
-   - After ANY edit to CLAUDE.md, run `{{PKG_SYNC_AGENTS}}` and stage the
+   - After ANY edit to CLAUDE.md, run ` ` and stage the
      regenerated files (`AGENTS.md .agents/ .codex/ .github/`) in the same
      commit — the `agent-instructions-sync` CI job fails on staleness.
 

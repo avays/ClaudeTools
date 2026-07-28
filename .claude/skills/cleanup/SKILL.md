@@ -4,7 +4,7 @@ description: Post-merge cleanup — pull main, delete merged feature branches, r
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 
@@ -103,7 +103,7 @@ Keep it tight. The user wants confirmation + a launching pad, not a status dump.
 ## What NOT to do
 
 - **Don't run `git push` or `git push --delete origin <branch>`.** Most hosts delete the remote branch on squash merge; trying to delete an already-deleted ref errors out. The local delete is sufficient.
-- **Don't run `{{PKG_INSTALL}}`, `{{PKG_SYNC_AGENTS}}`, or context refresh.** Those belong to the implementation phase, not cleanup. The merged PR already ran them.
+- **Don't run `{{PKG_INSTALL}}` or a context refresh.** Those belong to the implementation phase, not cleanup. The merged PR already ran them.
 - **Don't open a new branch or start the next ticket.** Cleanup ends with a recommendation; the user picks what's next.
 - **Don't kill processes you didn't start.** A process older than the current session belongs to the user.
 - **Don't `rm -rf` anything outside `.claude/worktrees/`.** Worktree removal is a `git worktree remove` operation, not a filesystem delete.

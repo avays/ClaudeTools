@@ -111,10 +111,11 @@ Known multi-site chains:
   interface, the INSERT path, AND the UPDATE path (the UPDATE is the reliable
   miss), plus a regression test per path.
 
-For a set of fully worked chains — real file lists, real issue numbers, and
-the specific way each one was missed in review — see
-`docs/examples/completeness-chains-upstream.md`. Read one before assuming a
-chain is short.
+Chains are usually longer than they look. Before declaring one complete, grep
+the enumerated set's name across the whole repo and confirm every hit is
+handled — the sites that compile fine while silently doing the wrong thing
+(an under-counting preview, a write path that drops a column) are the ones a
+typecheck pass will never surface.
 
 ## Board Pipeline Automation
 

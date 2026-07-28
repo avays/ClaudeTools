@@ -77,9 +77,7 @@ Do NOT update:
      burned two Copilot review rounds on this line alone.)
 
 5. **If you touched `CLAUDE.md` (or anything under `{{PATHS_RULES_DIR}}|skills|agents`), regenerate the derived agent files** — the `agent-instructions-sync` CI job fails the build on staleness:
-   ```
-   {{PKG_SYNC_AGENTS}}
-   ```
+   ``` ```
 
 6. Commit and push:
    ```

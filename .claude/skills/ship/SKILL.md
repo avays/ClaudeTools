@@ -6,7 +6,7 @@ argument-hint: "<issue_number> [no-pr] [dry-run]"
 ---
 
 <!-- host-specific: the tracker/host commands shown below are worked examples from
-     one setup. Your configured equivalents live in claudetools.config.json
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
      (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
      ports; the exact invocation is not. -->
 
@@ -81,7 +81,7 @@ or the failing checks if it hit the round cap), and the Learn summary
 8. **Copilot loop** — after every push the repo ruleset re-runs Copilot
    review (drafts included — `review_draft_pull_requests: true`); the
    workflow waits ~10 min, checks for unresolved threads, and runs the
-   `/resolve-copilot-feedback` procedure (fix or push back, one commit,
+   `/resolve-review-feedback` procedure (fix or push back, one commit,
    resolve every thread, summary comment) — repeating until a wait finds
    zero new threads (cap: 10 rounds). The fix agent runs on Opus.
 9. **Learn** — once the review cycle ends, the `/learn` retrospective

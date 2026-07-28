@@ -31,17 +31,16 @@ Agent definitions in `{{PATHS_AGENTS_DIR}}/`:
 | `implement-phase` | developer |
 | `add-domain` | developer |
 | `add-migration` | developer |
-| `typecheck-all` | developer, auditor |
 | `audit-phase` | auditor |
 | `update-context` | context-updater (ship Context phase / post-workflow) |
 | `update-progress` | context-updater (ship Context phase / post-workflow) |
-| `github-issue` | refinement |
+| `tracker-issue` | refinement |
 | `manage-context` | agent-manager |
 | `board` | board-runner |
 | `ship` | (main session — launches the ship Workflow) |
 | `ralph` | (main session — headless drain/audit loops) |
 | `learn` | agent-manager (ship Learn phase; also manual) |
-| `resolve-copilot-feedback` | developer (ship Copilot loop; also manual) |
+| `resolve-review-feedback` | developer (ship Copilot loop; also manual) |
 | `cleanup` | (main session — post-merge) |
 | `docs-drift` | (main session — docs maintenance) |
 | `generate-features` | (main session — feature catalog refresh) |
@@ -79,7 +78,6 @@ Agent definitions in `{{PATHS_AGENTS_DIR}}/`:
 | `registry.md` | developer, auditor |
 | `agent-skills.md` | developer, auditor |
 | `delete-lifecycle.md` | developer, auditor |
-| `approval-lifecycle.md` | developer, auditor |
 | `integration-adapters.md` | developer, auditor |
 | `railway.md` | developer (deployment work) |
 | `security-scanning.md` | developer (CI/security work) |

@@ -518,7 +518,7 @@ Steps:
 ### 6. Update references
 
 - Update `CLAUDE.md` current focus to reflect the new work
-- **Any edit to `CLAUDE.md` requires `{{PKG_SYNC_AGENTS}}` in the same commit,
+- **Any edit to `CLAUDE.md` requires ` ` in the same commit,
   and the regenerated files (`AGENTS.md .agents/ .codex/ .github/`) staged
   alongside it.** This applies here too, not just at the context-update
   step — `agent-instructions-sync` in CI diffs against HEAD, so a spec
