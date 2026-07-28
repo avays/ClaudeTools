@@ -3,9 +3,15 @@ name: cleanup
 description: Post-merge cleanup — pull main, delete merged feature branches, remove stranded ralph worktrees, kill leftover dev processes, close the issue. Run after the user says "merged" or "cleanup please".
 ---
 
+<!-- host-specific: the tracker/host commands shown below are worked examples from
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
+     (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
+     ports; the exact invocation is not. -->
+
+
 # Cleanup
 
-Run after a PR has been merged. Returns the repo + dev environment to a clean state and closes the related GitHub issue.
+Run after a PR has been merged. Returns the repo + dev environment to a clean state and closes the related {{VOCAB_ISSUE}}.
 
 ## When to run
 
@@ -69,10 +75,10 @@ The frontend dev server, the user's interactive `claude` process, and anything s
 
 ### 4. Issue + board
 
-Close the GitHub issue that the merged PR resolved:
+Close the {{VOCAB_ISSUE}} that the merged PR resolved:
 
 ```bash
-gh issue close <N> --repo Digital-Synchrony/ORM --comment "Done in PR #<P> (squash \`<sha>\`)."
+gh issue close <N> --repo {{VCS_REPO_SLUG}} --comment "Done in PR #<P> (squash \`<sha>\`)."
 ```
 
 The squash SHA is the first commit on `origin/main` after the pull, returned by `git log origin/main --oneline -1`.
@@ -96,8 +102,8 @@ Keep it tight. The user wants confirmation + a launching pad, not a status dump.
 
 ## What NOT to do
 
-- **Don't run `git push` or `git push --delete origin <branch>`.** The remote branch is deleted by GitHub on squash merge; trying to delete an already-deleted ref errors out. The local delete is sufficient.
-- **Don't run `pnpm install`, `pnpm sync-agents`, or context refresh.** Those belong to the implementation phase, not cleanup. The merged PR already ran them.
+- **Don't run `git push` or `git push --delete origin <branch>`.** Most hosts delete the remote branch on squash merge; trying to delete an already-deleted ref errors out. The local delete is sufficient.
+- **Don't run `{{PKG_INSTALL}}` or a context refresh.** Those belong to the implementation phase, not cleanup. The merged PR already ran them.
 - **Don't open a new branch or start the next ticket.** Cleanup ends with a recommendation; the user picks what's next.
 - **Don't kill processes you didn't start.** A process older than the current session belongs to the user.
 - **Don't `rm -rf` anything outside `.claude/worktrees/`.** Worktree removal is a `git worktree remove` operation, not a filesystem delete.

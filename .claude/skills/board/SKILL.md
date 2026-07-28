@@ -1,6 +1,6 @@
 ---
 name: board
-description: Run the next pipeline step for a GitHub issue. Usage: /board <issue_number> [step]
+description: Run the next pipeline step for a {{VOCAB_ISSUE}}. Usage: /board <issue_number> [step]
 user_invocable: true
 argument-hint: "<issue_number> [step: refine|spec|code|test|context|pr|all] [no-worktree]"
 ---

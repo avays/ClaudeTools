@@ -43,4 +43,4 @@ export async function ${name}Routes(app: FastifyInstance): Promise<void> {
 - Register: `app.register(${name}Routes)`
 
 ## 7. Verify
-Run: `pnpm --filter @orm/shared build && pnpm --filter @orm/backend typecheck`
+Run: `{{PKG_BUILD}} && {{PKG_TYPECHECK}}`

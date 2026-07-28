@@ -4,6 +4,12 @@ description: Generate or refresh the feature catalog — a comprehensive wiki in
 argument-hint: "[target] — 'all' (default), 'index-only', or a specific feature slug"
 ---
 
+<!-- host-specific: the tracker/host commands shown below are worked examples from
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
+     (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
+     ports; the exact invocation is not. -->
+
+
 # Generate Feature Catalog
 
 Scan all sources and generate/update `.ai/features/` — a comprehensive catalog of every feature in the platform with functionality descriptions and test cases.
@@ -38,11 +44,11 @@ Build the master feature list from these sources (in priority order):
 
 | Source | What it tells you | Feature type |
 |--------|------------------|--------------|
-| `.ai/specs/*.md` | Detailed spec with acceptance criteria | Spec-based (post-workflow) |
-| `.ai/context/CHANGELOG.md` | Per-feature implementation log with bullet summaries | Both types |
+| `{{PATHS_SPECS_DIR}}/*.md` | Detailed spec with acceptance criteria | Spec-based (post-workflow) |
+| `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md` | Per-feature implementation log with bullet summaries | Both types |
 | `CLAUDE.md` Implementation Status table | High-level feature bullets | Both types |
-| `.ai/context/BUILD_STATE.md` | Phase status, key counts | Legacy (pre-workflow) |
-| GitHub issues (closed, via `gh issue list`) | Acceptance criteria, discussion | Spec-based |
+| `{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` | Phase status, key counts | Legacy (pre-workflow) |
+| {{VOCAB_ISSUES}} (closed, via `gh issue list`) | Acceptance criteria, discussion | Spec-based |
 
 **Feature identification rules:**
 - Each CHANGELOG bullet (line starting with `- **Feature Name: DONE**`) = one feature
@@ -79,7 +85,7 @@ Use this template for each feature file:
 **Category**: {category}
 **Status**: {Done | In Progress | Partial}
 **Issue**: #{number} (if exists)
-**Spec**: .ai/specs/{slug}.md (if exists)
+**Spec**: {{PATHS_SPECS_DIR}}/{slug}.md (if exists)
 **Migration(s)**: {NNN} (if any)
 
 ## Overview
@@ -130,9 +136,9 @@ Use this template for each feature file:
 
 ### 4. Populate test cases
 
-**For spec-based features** (have a `.ai/specs/` file):
+**For spec-based features** (have a `{{PATHS_SPECS_DIR}}/` file):
 - Pull acceptance criteria directly from the spec's verification/test sections
-- Pull from GitHub issue acceptance criteria checkboxes
+- Pull from {{VOCAB_ISSUE}} acceptance criteria checkboxes
 - Add edge cases based on error handling visible in the code
 
 **For legacy features** (no spec):
@@ -187,15 +193,15 @@ After generation:
 
 | Source | Path | What to extract |
 |--------|------|----------------|
-| Specs | `.ai/specs/*.md` | Acceptance criteria, file lists, verification steps |
-| Changelog | `.ai/context/CHANGELOG.md` | Feature names, status, file references, descriptions |
-| Build state | `.ai/context/BUILD_STATE.md` | Phase status, counts |
+| Specs | `{{PATHS_SPECS_DIR}}/*.md` | Acceptance criteria, file lists, verification steps |
+| Changelog | `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md` | Feature names, status, file references, descriptions |
+| Build state | `{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` | Phase status, counts |
 | CLAUDE.md | `CLAUDE.md` | Implementation Status table |
-| Endpoints | `.ai/context/API_ENDPOINTS.md` | Route → feature mapping |
-| Schema | `.ai/context/SCHEMA.md` | Migration → feature mapping |
-| Domains | `.ai/context/DOMAINS.md` | Domain → feature mapping |
-| GitHub issues | `gh issue list --state closed` | Acceptance criteria, labels |
-| Frontend | `.ai/context/FRONTEND.md` | Route → page → feature mapping |
+| Endpoints | `{{PATHS_CONTEXT_DIR}}/API_ENDPOINTS.md` | Route → feature mapping |
+| Schema | `{{PATHS_CONTEXT_DIR}}/SCHEMA.md` | Migration → feature mapping |
+| Domains | `{{PATHS_CONTEXT_DIR}}/DOMAINS.md` | Domain → feature mapping |
+| {{VOCAB_ISSUES}} | `{{TRACKER_LIST_ISSUES}}` | Acceptance criteria, labels |
+| Frontend | `{{PATHS_CONTEXT_DIR}}/FRONTEND.md` | Route → page → feature mapping |
 
 ## Tips
 - When in doubt about grouping, prefer fewer larger features over many tiny ones

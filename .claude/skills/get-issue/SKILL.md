@@ -1,9 +1,15 @@
 ---
 name: get-issue
-description: Survey open GitHub issues and epics, exclude anything already in flight (agent:* labels, open PRs, remote branches), and recommend what to pursue next by epic. Usage: /get-issue [epic_number | quick]
+description: Survey open {{VOCAB_ISSUES}} and epics, exclude anything already in flight (agent:* labels, open PRs, remote branches), and recommend what to pursue next by epic. Usage: /get-issue [epic_number | quick]
 user_invocable: true
 argument-hint: "[epic_number | quick]"
 ---
+
+<!-- host-specific: the tracker/host commands shown below are worked examples from
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
+     (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
+     ports; the exact invocation is not. -->
+
 
 # Get Issue — recommend the next issue to pursue
 
@@ -29,11 +35,11 @@ branches. It ends with an offer — never by starting work.
 Run the read-only sweep (first three in parallel):
 
 ```bash
-gh issue list --repo Digital-Synchrony/ORM --state open --limit 200 \
+gh issue list --repo {{VCS_REPO_SLUG}} --state open --limit 200 \
   --json number,title,labels,updatedAt \
   --jq '.[] | "\(.number)\t\([.labels[].name] | join(","))\t\(.updatedAt)\t\(.title)"'
 
-gh pr list --repo Digital-Synchrony/ORM --state open \
+gh pr list --repo {{VCS_REPO_SLUG}} --state open \
   --json number,title,headRefName,body,isDraft \
   --jq '.[] | "\(.number)\t\(.headRefName)\t\(.isDraft)\t\(.title)\t\(.body | gsub("\n"; " ") | .[0:200])"'
 
@@ -41,12 +47,12 @@ git fetch origin --prune && git ls-remote --heads origin 'feature/*'
 ```
 
 Then fetch the body of every open issue whose title starts with `Epic:`
-(one `gh issue view <N> --repo Digital-Synchrony/ORM --json body` each) —
+(one `{{TRACKER_VIEW_ISSUE}}` each) —
 epic bodies carry the child task lists and dependency annotations.
 
 **Board status is best-effort only.** If you want it, use the issue-side
 query (`repository.issue(N).projectItems` filtered to project 1 — see
-`.ai/context/PROJECT_BOARD.md`), try it ONCE, and on any scope error
+`{{PATHS_CONTEXT_DIR}}/PROJECT_BOARD.md`), try it ONCE, and on any scope error
 (`INSUFFICIENT_SCOPES`) proceed without board data. Labels, PRs, and
 branches are the source of truth; a board failure is never fatal.
 
@@ -55,7 +61,7 @@ branches are the source of truth; a board failure is never fatal.
 Three independent signals, checked per issue:
 
 1. **Any `agent:*` label** → hard-exclude. These are the repo's working
-   locks (`.claude/rules/workflow.md`); `agent:awaiting-input` and
+   locks (`{{PATHS_RULES_DIR}}/workflow.md`); `agent:awaiting-input` and
    `agent:error` additionally mean "human-gated — do not touch".
 2. **An open PR references it** — body contains `Closes #N` / `Fixes #N`
    / `Resolves #N`, or the `headRefName` slug obviously matches the issue
@@ -146,7 +152,7 @@ Keep it scannable:
 ## Precedents
 
 - In-flight filter conventions: `scripts/ralph.sh pick_next_issue`
-  (OPEN + no `agent:*` label) and `.claude/rules/workflow.md` (lock
+  (OPEN + no `agent:*` label) and `{{PATHS_RULES_DIR}}/workflow.md` (lock
   vocabulary).
 - Live examples this skill exists for (2026-07-19): #1130 was already
   covered by open PR #1158, and #1105 carried `agent:in-progress` plus a

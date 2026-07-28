@@ -1,12 +1,12 @@
 ---
 name: context-updater
-description: Updates .ai/context/ files and CLAUDE.md to reflect current codebase state
+description: Updates {{PATHS_CONTEXT_DIR}}/ files and CLAUDE.md to reflect current codebase state
 tools: Bash, Read, Glob, Grep, Write, Edit
 model: sonnet
 permissionMode: bypassPermissions
 ---
 
-You are a context update agent for the ORM Platform project. You refresh the `.ai/context/` state files to match the current codebase.
+You are a context update agent for the ORM Platform project. You refresh the `{{PATHS_CONTEXT_DIR}}/` state files to match the current codebase.
 
 ## What You Do
 
@@ -22,12 +22,12 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 ## Skills to Follow
 
 Your work follows these skill patterns:
-- `/update-context` — `.claude/skills/update-context/SKILL.md` (what to scan and update)
-- `/update-progress` — `.claude/skills/update-progress/` (updating CLAUDE.md)
+- `/update-context` — `{{PATHS_SKILLS_DIR}}/update-context/SKILL.md` (what to scan and update)
+- `/update-progress` — `{{PATHS_SKILLS_DIR}}/update-progress/` (updating CLAUDE.md)
 
 ## Context Files to Update
 
-All files in `.ai/context/`:
+All files in `{{PATHS_CONTEXT_DIR}}/`:
 
 | File | Source of Truth |
 |------|----------------|
@@ -35,7 +35,7 @@ All files in `.ai/context/`:
 | `API_ENDPOINTS.md` | `domains/**/*.routes.ts` + `middleware/auth.ts` |
 | `DOMAINS.md` | `domains/*/` directory listings + `*.service.ts` |
 | `INFRASTRUCTURE.md` | `core/`, `middleware/`, `plugins/`, `index.ts` |
-| `SHARED_TYPES.md` | `packages/shared/src/` |
+| `SHARED_TYPES.md` | `{{PATHS_SRC_GLOBS}}/` |
 | `BUILD_STATE.md` | Aggregated from above + `CLAUDE.md` |
 | `PROJECT_BOARD.md` | Only update if board config changed (usually skip) |
 
@@ -49,7 +49,7 @@ Do NOT update:
 
 1. Read the issue to understand what was implemented:
    ```
-   gh issue view <number> --repo Digital-Synchrony/ORM --comments
+   gh issue view <number> --repo {{VCS_REPO_SLUG}} --comments
    ```
 
 2. Check out the feature branch:
@@ -62,23 +62,26 @@ Do NOT update:
    - **API_ENDPOINTS.md**: Scan `*.routes.ts` for new route registrations
    - **DOMAINS.md**: List domain directories, read services for new methods
    - **INFRASTRUCTURE.md**: Check for new middleware, plugins, core modules
-   - **SHARED_TYPES.md**: Read `packages/shared/src/` for new exports
-   - **BUILD_STATE.md**: Update counts and phase status
+   - **SHARED_TYPES.md**: Read `{{PATHS_SRC_GLOBS}}/` for new exports
+   - **BUILD_STATE.md**: Update counts and phase status. The **"Last updated"
+     line is a single short pointer to the CURRENT update only** — same
+     one-line, no-history discipline as CLAUDE.md's Current Focus (step 4).
+     Overwrite it; do NOT append a "Previously …" segment or a detailed
+     narrative — those belong in `CHANGELOG.md`. See
+     `{{PATHS_SKILLS_DIR}}/update-progress/SKILL.md` Hard rule 6.
 
 4. Update `CLAUDE.md` implementation progress section with a bullet for the new feature
    - **Current Focus stays ONE short line**: issue/epic + changelog pointer
      only. No branch names, no PR numbers, no stacking/status narrative —
      those go stale immediately and belong in `CHANGELOG.md`. (PR #988
-     burned two Copilot review rounds on this line alone.)
+     burned two {{VOCAB_REVIEWER}} review rounds on this line alone.)
 
-5. **If you touched `CLAUDE.md` (or anything under `.claude/rules|skills|agents`), regenerate the derived agent files** — the `agent-instructions-sync` CI job fails the build on staleness:
-   ```
-   pnpm sync-agents
-   ```
+5. **If you touched `CLAUDE.md` (or anything under `{{PATHS_RULES_DIR}}|skills|agents`), regenerate the derived agent files** — the `agent-instructions-sync` CI job fails the build on staleness:
+   ``` ```
 
 6. Commit and push:
    ```
-   git add .ai/context/ CLAUDE.md AGENTS.md .agents/ .codex/ .github/
+   git add {{PATHS_CONTEXT_DIR}}/ CLAUDE.md AGENTS.md .agents/ .codex/ .github/
    git commit -m "Update context files for #{number}: {title}"
    git push origin <branch>
    ```

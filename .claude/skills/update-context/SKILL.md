@@ -1,12 +1,12 @@
 ---
 name: update-context
-description: Scan the codebase and update .ai/context/ state files to reflect current reality
+description: Scan the codebase and update {{PATHS_CONTEXT_DIR}}/ state files to reflect current reality
 argument-hint: "[target]"
 ---
 
 # Update Context Files
 
-Scan the codebase and update `.ai/context/` state files to reflect current reality.
+Scan the codebase and update `{{PATHS_CONTEXT_DIR}}/` state files to reflect current reality.
 
 ## When to Run
 - After completing a phase or major feature
@@ -25,31 +25,31 @@ Valid targets: `all`, `schema`, `endpoints`, `domains`, `infrastructure`, `share
 For each target, scan the relevant sources and regenerate the context file:
 
 #### `SCHEMA.md`
-- Read `packages/backend/src/core/db.ts` for table interfaces
+- Read `{{PATHS_SRC_GLOBS}}/core/db.ts` for table interfaces
 - Read all `packages/backend/migrations/*.sql` files
 - Document every table: columns, types, constraints, indexes, RLS, FKs
 - Group by migration/phase
 
 #### `API_ENDPOINTS.md`
-- Find all `*.routes.ts` files in `packages/backend/src/domains/`
+- Find all `*.routes.ts` files in `{{PATHS_SRC_GLOBS}}/domains/`
 - Extract every route registration (app.get/post/patch/put/delete)
 - Document: method, path, auth requirement, permission guard, description
 - Cross-reference with AUTH_PUBLIC_PATHS in `middleware/auth.ts`
 
 #### `DOMAINS.md`
-- List all directories in `packages/backend/src/domains/`
+- List all directories in `{{PATHS_SRC_GLOBS}}/domains/`
 - For each: list files, read service to extract method names
 - Note routes, events, schema, processor files
 - Map cross-domain dependencies (imports between domains)
 
 #### `INFRASTRUCTURE.md`
-- Read `packages/backend/src/index.ts` for registration order
+- Read `{{PATHS_SRC_GLOBS}}/index.ts` for registration order
 - Read all files in `core/`, `middleware/`, `plugins/`
 - Document: middleware stack, plugins, core systems, error classes, utilities
 
 #### `SHARED_TYPES.md`
-- Read `packages/shared/src/index.ts` for exports
-- Read all files in `packages/shared/src/types/` and `constants/`
+- Read `{{PATHS_SRC_GLOBS}}/index.ts` for exports
+- Read all files in `{{PATHS_SRC_GLOBS}}/types/` and `constants/`
 - List all exported schemas, types, and constants per module
 
 #### `DEFERRED_ITEMS.md`
@@ -79,7 +79,7 @@ For each target, scan the relevant sources and regenerate the context file:
 - Document: JWT claims, RBAC model, middleware stack, MFA, rate limiting, CSP, credential storage
 
 #### `FRONTEND.md`
-- Scan `packages/frontend/src/` for routes, components, hooks, stores, engine
+- Scan `{{PATHS_SRC_GLOBS}}/` for routes, components, hooks, stores, engine
 - Document: route map, shared UI components, hooks inventory, stores, layout engine
 
 #### `REALTIME.md`
@@ -93,6 +93,24 @@ For each target, scan the relevant sources and regenerate the context file:
 #### `PACKAGES.md`
 - Scan `domains/marketplace/`, `packages/registry/src/`, `shared/types/marketplace.ts`
 - Document: manifest schema, install lifecycle, namespace prefixing, registry service endpoints
+
+#### Never hand-list an enumeration or count that mirrors a source-of-truth constant
+
+When a context file documents a shape whose canonical definition already lives
+in a shared constant / Zod schema (e.g. `PACKAGES.md`'s manifest `contents`
+keys ↔ `MANIFEST_CONTENTS_MAP` / `CONTENTS_ONLY_KEYS`, an endpoint list ↔ a
+route registry, a permission list ↔ `PERMISSIONS`), **reference the constant —
+do not transcribe the full key list or a hardcoded count ("28 keys") into the
+doc.** A hand-listed enumeration silently drifts the next time a key is
+added/renamed (the doc under-reports the very categories a new feature added),
+and a hardcoded count contradicts its own adjacent list the moment either
+changes. Keep at most the one or two non-obvious mappings that aren't
+self-evident from the key names, and point at the constant for the rest.
+Precedent: PR #1240 (#1203) — `PACKAGES.md`'s manifest `contents` enumeration
+was flagged twice in one review cycle (Copilot round 2 for a hardcoded "28
+keys" + inline list; code-audit opus round 2 for a stale 13-key list that
+omitted the 15 categories the feature added); fixed by pointing at
+`MANIFEST_CONTENTS_MAP` / `CONTENTS_ONLY_KEYS`.
 
 ### 3. Verify consistency
 
@@ -112,13 +130,13 @@ Summarize what changed in each file (new tables, new endpoints, new domains, etc
 | API_ENDPOINTS.md | `domains/**/*.routes.ts`, `middleware/auth.ts` |
 | DOMAINS.md | `domains/*/` directory listings, `*.service.ts` files |
 | INFRASTRUCTURE.md | `core/`, `middleware/`, `plugins/`, `index.ts` |
-| SHARED_TYPES.md | `packages/shared/src/` |
+| SHARED_TYPES.md | `{{PATHS_SRC_GLOBS}}/` |
 | CHANGELOG.md | `CLAUDE.md` progress, completed feature details |
 | AI_AGENTS.md | `core/ai/`, `domains/ai/`, `shared/types/ai.ts` |
 | INTEGRATIONS.md | `domains/integrations/`, `shared/types/integrations.ts` |
 | AUTOMATION.md | `domains/automation/`, `domains/approval/`, `core/scripting/`, `core/jobs/` |
 | AUTH_SECURITY.md | `domains/auth/`, `domains/rbac/`, `middleware/` |
-| FRONTEND.md | `packages/frontend/src/` (routes, components, hooks, stores, engine) |
+| FRONTEND.md | `{{PATHS_SRC_GLOBS}}/` (routes, components, hooks, stores, engine) |
 | REALTIME.md | `core/realtime/` |
 | DEPLOYMENT.md | `Dockerfile*`, `docker-compose*.yml`, `core/migrate.ts`, `core/jobs/queues.ts` |
 | PACKAGES.md | `domains/marketplace/`, `packages/registry/src/`, `shared/types/marketplace.ts` |

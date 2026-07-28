@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
+#
+# HOST-SPECIFIC COMMANDS. The gh invocations below are GitHub's, kept as-is
+# because they are the ones that have been exercised in production. For a
+# different tracker, replace the lock helpers' bodies with your config's
+# TRACKER_LOCK_ACQUIRE / TRACKER_LOCK_RELEASE / TRACKER_LOCK_QUERY commands.
+# The contract they implement is host-independent: acquire before the status
+# move, release on EVERY exit path including the trap, and never auto-clear
+# a stale lock (surface it instead).
+#
+# NOTE ON ATOMICITY: this loop's parallel-safety assumes the lock acquire is
+# atomic. GitHub labels are; a JIRA label edit is NOT (read-modify-write).
+# See templates/trackers/jira/profile.json notes before running a fleet.
+#
 # Ralph loop — headless Claude running /board in a continuous drain over the
-# ORM Build project board. Each iteration spawns a fresh Claude process,
+# {{TRACKER_BOARD_NAME}}. Each iteration spawns a fresh Claude process,
 # picks the furthest-progressed issue in an actionable status, runs one
 # /board step, exits. Repeat until the board has nothing actionable.
 #
@@ -46,14 +59,14 @@
 
 set -euo pipefail
 
-# --- Config / constants (mirror .ai/context/PROJECT_BOARD.md) ----------------
+# --- Config / constants (mirror {{PATHS_CONTEXT_DIR}}/PROJECT_BOARD.md) ----------------
 
-readonly PROJECT_OWNER="Digital-Synchrony"
+readonly PROJECT_OWNER="{{VCS_REPO_SLUG}}"
 readonly PROJECT_NUMBER=1
 
 # Statuses ordered furthest-progressed first. Ralph drains near-done work
 # before picking up fresh refinement, to keep WIP low.
-# "Ready for PR" removed — it does not exist on the ORM Build board;
+# "Ready for PR" removed — it does not exist on {{TRACKER_BOARD_NAME}};
 # Context Complete is the pre-PR gate and the pr step runs from there.
 readonly ACTIONABLE_STATUSES=(
   "Ready for Context"
@@ -125,7 +138,7 @@ cleanup() {
   # Best-effort: release any in-flight issue lock so a Ctrl-C / crash
   # doesn't strand the issue as unpickable. If gh isn't available or the
   # call fails, the operator can recover manually per
-  # .claude/rules/workflow.md "Stale lock recovery". Skip the real API
+  # {{PATHS_RULES_DIR}}/workflow.md "Stale lock recovery". Skip the real API
   # call in dry-run — acquire_issue_lock didn't actually set the label,
   # so removing it would violate dry-run semantics (real mutation to
   # GitHub state).
@@ -248,10 +261,10 @@ run_board_once() {
 # Ralph's generic `agent:in-progress` is the outer fence. Both are filtered
 # by pick_next_issue (any agent:* label = skip).
 #
-# Lock contract documented in .claude/rules/workflow.md "Agent Locking".
+# Lock contract documented in {{PATHS_RULES_DIR}}/workflow.md "Agent Locking".
 
 readonly RALPH_LOCK_LABEL="agent:in-progress"
-readonly GH_REPO="Digital-Synchrony/ORM"
+readonly GH_REPO="{{VCS_REPO_SLUG}}"
 
 acquire_issue_lock() {
   local issue="$1"
@@ -294,7 +307,7 @@ resolve_target_branch() {
   fi
   if [[ -n "$target_pr" ]]; then
     local branch
-    branch=$(gh pr view "$target_pr" --repo Digital-Synchrony/ORM \
+    branch=$(gh pr view "$target_pr" --repo {{VCS_REPO_SLUG}} \
               --json headRefName -q .headRefName 2>/dev/null) || return 1
     if [[ -z "$branch" || "$branch" == "null" ]]; then
       log "error: PR #$target_pr has no headRefName"
@@ -317,7 +330,7 @@ resolve_target_branch() {
 resolve_base_branch() {
   if [[ -n "$target_pr" ]]; then
     local base
-    base=$(gh pr view "$target_pr" --repo Digital-Synchrony/ORM \
+    base=$(gh pr view "$target_pr" --repo {{VCS_REPO_SLUG}} \
             --json baseRefName -q .baseRefName 2>/dev/null) || { echo "main"; return 0; }
     if [[ -z "$base" || "$base" == "null" ]]; then
       echo "main"
@@ -435,10 +448,10 @@ run_audit_loop() {
     local audit_prompt
     audit_prompt="${worktree_note}"
     audit_prompt+="Run the /audit-phase skill for GitHub issue #${issue} on the current branch (${branch}). "
-    audit_prompt+="Locate the spec at .ai/specs/ (match by issue number or feature name). "
+    audit_prompt+="Locate the spec at {{PATHS_SPECS_DIR}}/ (match by issue number or feature name). "
     audit_prompt+="Examine only files changed on this branch vs origin/${base_branch} "
     audit_prompt+="(this PR's target branch — use 'git diff origin/${base_branch}...HEAD' to scope the diff). "
-    audit_prompt+="Apply every rule in .claude/rules/*.md and every pitfall in .claude/agents/auditor.md. "
+    audit_prompt+="Apply every rule in {{PATHS_RULES_DIR}}/*.md and every pitfall in {{PATHS_AGENTS_DIR}}/auditor.md. "
     audit_prompt+="Write EVERY finding (CRITICAL, HIGH, MEDIUM, LOW) to the ABSOLUTE path ${findings_file} "
     audit_prompt+="with concrete file:line references and prescribed fixes. If there are no findings, "
     audit_prompt+="write exactly 'No findings.' as the file contents. Do NOT modify any source code. "
@@ -453,16 +466,16 @@ run_audit_loop() {
 
     local line_review_prompt
     line_review_prompt="${worktree_note}"
-    line_review_prompt+="Read .claude/agents/line-reviewer.md and follow its instructions exactly. "
+    line_review_prompt+="Read {{PATHS_AGENTS_DIR}}/line-reviewer.md and follow its instructions exactly. "
     line_review_prompt+="You are the line-reviewer agent: a Copilot-style line-by-line diff reviewer that "
     line_review_prompt+="complements the architectural auditor. Get the diff with 'git diff origin/${base_branch}...HEAD' "
     line_review_prompt+="on the current branch (${branch}) — base branch is '${base_branch}' (the PR's target). "
     line_review_prompt+="Walk every changed hunk; flag every concern "
     line_review_prompt+="(CRITICAL, HIGH, MEDIUM, LOW — LOW findings are welcome). Cross-check against "
-    line_review_prompt+=".claude/rules/frontend-components.md 'Recurring correctness rules'. "
+    line_review_prompt+="{{PATHS_RULES_DIR}}/frontend-components.md 'Recurring correctness rules'. "
     line_review_prompt+="If ${findings_file} exists, read it first and DO NOT duplicate findings it already lists. "
     line_review_prompt+="Write findings to the ABSOLUTE path ${line_findings_file} using the format in "
-    line_review_prompt+=".claude/agents/line-reviewer.md. If there are no findings after a thorough walk, "
+    line_review_prompt+="{{PATHS_AGENTS_DIR}}/line-reviewer.md. If there are no findings after a thorough walk, "
     line_review_prompt+="write exactly 'No findings.' as the file contents. Do NOT modify any source code. "
     line_review_prompt+="Do NOT commit. This is line-review pass ${pass} of ${passes}."
 
@@ -502,16 +515,16 @@ run_audit_loop() {
       fix_prompt+="finding in both files (CRITICAL, HIGH, MEDIUM, and LOW — severity orders work, it does "
       fix_prompt+="not license deferral). If a file contains only 'No findings.', skip it. "
       fix_prompt+="If the two files list the same issue, fix it once and note the dedup. "
-      fix_prompt+="Follow .claude/rules/*.md for conventions. Comment hygiene (#843): source comments and test "
+      fix_prompt+="Follow {{PATHS_RULES_DIR}}/*.md for conventions. Comment hygiene (#843): source comments and test "
       fix_prompt+="names cite an issue anchor (#${issue}) plus a plain-English rationale ONLY — NEVER audit-pass/"
       fix_prompt+="fix-pass/finding-code metadata like '(audit pass 1, LOW #3)' or 'line-review #1'; the arch test "
       fix_prompt+="no-agent-iteration-comments.test.ts fails CI on these, run it before your final push. "
       fix_prompt+="After fixing, sweep your own blast radius: if a fix changed behavior or method names, grep "
-      fix_prompt+=".ai/context/ for the symbols you touched and update stale doc mentions; if a fix removed an "
+      fix_prompt+="{{PATHS_CONTEXT_DIR}}/ for the symbols you touched and update stale doc mentions; if a fix removed an "
       fix_prompt+="assignment or branch, re-read the surrounding function for now-dead conditionals. "
       fix_prompt+="Commit incrementally with descriptive "
-      fix_prompt+="messages referencing issue #${issue}. After each commit run 'pnpm --filter @orm/shared build' "
-      fix_prompt+="then 'pnpm --filter @orm/backend typecheck'. Push to origin/${branch} after EACH commit "
+      fix_prompt+="messages referencing issue #${issue}. After each commit run '{{PKG_BUILD}}' "
+      fix_prompt+="then '{{PKG_TYPECHECK}}'. Push to origin/${branch} after EACH commit "
       fix_prompt+="(the worktree is ephemeral). Do NOT open a PR, do NOT change board status. "
       fix_prompt+="This is fix pass ${pass} of $((passes-1))."
 

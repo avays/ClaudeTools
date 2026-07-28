@@ -9,14 +9,18 @@ argument-hint: "[add-rule|add-skill|review|update] [name]"
 ## Commands
 
 ### `add-rule [name]`
-Create a new rule file at `.claude/rules/{name}.md`:
-- Ask what file globs it should apply to
+Create a new rule file at `{{PATHS_RULES_DIR}}/{name}.md`:
+- Ask what file paths/globs the rule should scope to
 - Ask what conventions/instructions to include
-- Write the file with proper frontmatter (`globs:` array)
-- Rules without globs load on every session — use sparingly
+- Write the file with NO `globs:` frontmatter, and add the rule's glob list
+  to `{{PATHS_RULES_DIR}}/file-patterns.json` — the ONLY scoping source (see
+  Frontmatter Reference below; `globs:` frontmatter is vestigial) — PLUS a
+  `{{PATHS_RULES_DIR}}/rule-budgets.json` entry (introduction size +15%, and add
+  the same amount to `totalCap`) — the `agent-instructions-sync` CI job
+  fails on a rule file with no budget entry (`check-rule-budget.sh`)
 
 ### `add-skill [name]`
-Create a new skill at `.claude/skills/{name}/SKILL.md`:
+Create a new skill at `{{PATHS_SKILLS_DIR}}/{name}/SKILL.md`:
 - Ask what the skill should do
 - Ask if it should be user-invocable, model-invocable, or both
 - Write the SKILL.md with proper frontmatter
@@ -24,11 +28,13 @@ Create a new skill at `.claude/skills/{name}/SKILL.md`:
 
 ### `review`
 Audit all context files for quality:
-1. Read `CLAUDE.md` — check it's under 200 lines, progress section is compact
-2. Read `.ai/context/CHANGELOG.md` — check detailed progress lives here, not CLAUDE.md
-3. Verify all 20 context files exist in `.ai/context/`: BUILD_STATE, SCHEMA, API_ENDPOINTS, DOMAINS, INFRASTRUCTURE, SHARED_TYPES, AI_AGENTS, INTEGRATIONS, AUTOMATION, AUTH_SECURITY, FRONTEND, REALTIME, DEPLOYMENT, PACKAGES, STYLE_GUIDE, CHANGELOG, PROJECT_BOARD, DEFERRED_ITEMS, PRODUCT_SPEC, IMPLEMENTATION_SPEC
-4. List `.claude/rules/` — check each has valid `globs:` frontmatter
-5. List `.claude/skills/` — check each has valid SKILL.md with frontmatter
+1. Read `CLAUDE.md` — check it stays a lean index (~250-line ceiling; 219 as of #1243), progress section is compact
+2. Read `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md` — check detailed progress lives here, not CLAUDE.md
+3. Verify all 20 context files exist in `{{PATHS_CONTEXT_DIR}}/`: BUILD_STATE, SCHEMA, API_ENDPOINTS, DOMAINS, INFRASTRUCTURE, SHARED_TYPES, AI_AGENTS, INTEGRATIONS, AUTOMATION, AUTH_SECURITY, FRONTEND, REALTIME, DEPLOYMENT, PACKAGES, STYLE_GUIDE, CHANGELOG, PROJECT_BOARD, DEFERRED_ITEMS, PRODUCT_SPEC, IMPLEMENTATION_SPEC
+4. List `{{PATHS_RULES_DIR}}/` — check each has a `file-patterns.json` entry AND
+   a `rule-budgets.json` entry (run `scripts/check-rule-budget.sh`;
+   `globs:` frontmatter is vestigial — flag it for removal, never add it)
+5. List `{{PATHS_SKILLS_DIR}}/` — check each has valid SKILL.md with frontmatter
 6. Check for contradictions between rules and context files
 7. Check for outdated information (stale context files should have header notes)
 8. Report findings and suggest fixes
@@ -42,27 +48,28 @@ Update a specific context file:
 
 ## File Locations
 - Root context: `CLAUDE.md`
-- Rules: `.claude/rules/*.md` (path scoping via `.claude/rules/file-patterns.json` — see Frontmatter Reference below)
-- Skills: `.claude/skills/{name}/SKILL.md`
+- Rules: `{{PATHS_RULES_DIR}}/*.md` (path scoping via `{{PATHS_RULES_DIR}}/file-patterns.json` — see Frontmatter Reference below)
+- Skills: `{{PATHS_SKILLS_DIR}}/{name}/SKILL.md`
 - Project settings: `.claude/settings.json`
-- Specs (read-only reference): `.ai/context/`
+- Specs (read-only reference): `{{PATHS_CONTEXT_DIR}}/`
 
 ## Frontmatter Reference
 
 ### Rules
 
-Path scoping lives in `.claude/rules/file-patterns.json` — one entry per
+Path scoping lives in `{{PATHS_RULES_DIR}}/file-patterns.json` — one entry per
 rule file, keyed by the rule's basename (no extension), value a
 comma-separated glob list. `scripts/sync-copilot-instructions.mjs` reads it
 to set `applyTo:` on the generated `.github/instructions/` variants. A `"**"`
 value means always-on (e.g. `architecture-principles`, `workflow`):
 
 ```json
-{ "backend-api": "packages/backend/src/domains/**/*.routes.ts" }
+{ "backend-api": "{{PATHS_SRC_GLOBS}}/domains/**/*.routes.ts" }
 ```
 
-Every rule file MUST have a `file-patterns.json` entry — the
-`agent-instructions-sync` CI job fails on orphans. `globs:` YAML frontmatter
+Every rule file MUST have a `file-patterns.json` entry AND a
+`rule-budgets.json` entry — the `agent-instructions-sync` CI job fails on
+orphans and on a rule file with no budget entry (`check-rule-budget.sh`). `globs:` YAML frontmatter
 found in older rule files is vestigial: the sync script never reads it, so
 don't add it to new rules and don't trust it as the scoping source.
 

@@ -13,12 +13,12 @@ The docs site mixes three kinds of content, each with a different drift risk:
    registry changes and nobody regenerates.
 2. **Hand-written prose** — `concepts/*` and `subsystems/*` pages. These cite
    counts ("19 flow steps") and names that can drift from the registries.
-3. **Upstream `.ai/context/*.md`** — the agent-facing notes the prose is mined
+3. **Upstream `{{PATHS_CONTEXT_DIR}}/*.md`** — the agent-facing notes the prose is mined
    from. These themselves drift (e.g. `AUTOMATION.md` said "18 flow steps" when
    the registry had 19).
 
 This skill detects all three and **safely auto-fixes only the first** (it
-regenerates the committed artifacts). For prose / `.ai/context` mismatches it
+regenerates the committed artifacts). For prose / `{{PATHS_CONTEXT_DIR}}` mismatches it
 **reports and recommends** — those need human judgement.
 
 ## When to run
@@ -39,7 +39,7 @@ The generators read the in-process registries/routes, so first build shared
 dist is behind a just-merged `@orm/shared` export):
 
 ```bash
-pnpm --filter @orm/shared build
+{{PKG_BUILD}}
 pnpm gen:openapi      # → packages/docs/openapi/orm-api.json
 pnpm gen:reference    # → packages/docs/docs/reference/registries/*.md
 git status --porcelain packages/docs/openapi/ packages/docs/docs/reference/registries/
@@ -56,7 +56,7 @@ git status --porcelain packages/docs/openapi/ packages/docs/docs/reference/regis
 ### 2. Coverage — no registry left undocumented
 
 ```bash
-pnpm --filter @orm/backend test src/__tests__/registry-reference-coverage.test.ts
+{{PKG_TEST}} src/__tests__/registry-reference-coverage.test.ts
 ```
 
 A failure means a new `registerBuiltin*` registry exists that is neither in the
@@ -97,19 +97,19 @@ fix: reword the prose to link the reference page instead of hardcoding a
 number**, or correct the number. (Prose edits are recommended, not auto-applied
 — flag them for the human.)
 
-Also check the **upstream `.ai/context/*.md`** sources for the same drift, since
+Also check the **upstream `{{PATHS_CONTEXT_DIR}}/*.md`** sources for the same drift, since
 they're what the prose is mined from:
 
 ```bash
-grep -rnoE '~?[0-9]+ (flow[- ]step|field type|action type|criteria operator|layout component|context builder|permission|error code)' .ai/context
+grep -rnoE '~?[0-9]+ (flow[- ]step|field type|action type|criteria operator|layout component|context builder|permission|error code)' {{PATHS_CONTEXT_DIR}}
 ```
 
-Report any `.ai/context` file whose counts disagree with the registries and
-recommend an `/update-context` refresh — but do **not** edit `.ai/context` here.
+Report any `{{PATHS_CONTEXT_DIR}}` file whose counts disagree with the registries and
+recommend an `/update-context` refresh — but do **not** edit `{{PATHS_CONTEXT_DIR}}` here.
 
 **`error code` counts are the highest-drift offender** — `ERROR_CODES` in
 `constants/error-codes.ts` grows on nearly every feature PR, so a hardcoded
-count in `.ai/context/SHARED_TYPES.md` goes stale faster than most other
+count in `{{PATHS_CONTEXT_DIR}}/SHARED_TYPES.md` goes stale faster than most other
 registries (it had already drifted twice — `~139` and `~138`/`308` in two
 separate rows of the same file — before a third instance was caught in PR
 #1156/#1100 review). When a count-drift finding is an `error code` row,
@@ -135,7 +135,7 @@ Summarize concisely:
   "all current"). If any were stale, commit them.
 - **Coverage:** pass, or the registry missing a page.
 - **Build:** clean, or the broken link / MDX error.
-- **Count drift:** each prose/`.ai/context` mismatch (file:line, stated vs
+- **Count drift:** each prose/`{{PATHS_CONTEXT_DIR}}` mismatch (file:line, stated vs
   actual) with the recommended fix.
 - **Leak-guard:** clean, or the leaked lines.
 
@@ -145,7 +145,7 @@ for the human to action.
 ## Hard rules
 
 1. **Only regeneration is auto-applied.** Never auto-rewrite prose or
-   `.ai/context/*.md` — flag them.
+   `{{PATHS_CONTEXT_DIR}}/*.md` — flag them.
 2. **Never hand-edit a generated file** (`orm-api.json`,
    `reference/registries/*.md`) — regenerate via the script.
 3. **Build shared before regenerating** — otherwise the generator may fail to

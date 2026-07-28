@@ -22,14 +22,14 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 ## Context Files to Read
 
 - `CLAUDE.md` — Check for test commands
-- `.ai/context/BUILD_STATE.md` — Current build state
+- `{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` — Current build state
 
 ## Process
 
 1. Read the issue and find the feature branch:
    ```
-   gh issue view <number> --repo Digital-Synchrony/ORM --comments
-   gh pr list --repo Digital-Synchrony/ORM --state open --search "<number>"
+   gh issue view <number> --repo {{VCS_REPO_SLUG}} --comments
+   gh pr list --repo {{VCS_REPO_SLUG}} --state open --search "<number>"
    ```
 
 2. Check out the branch:
@@ -39,7 +39,7 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 
 3. Run typecheck first (this always applies):
    ```
-   pnpm --filter @orm/shared build && pnpm --filter @orm/ui build && pnpm --filter @orm/backend typecheck
+   {{PKG_BUILD}} && pnpm --filter @orm/ui build && {{PKG_TYPECHECK}}
    ```
 
    If the PR touches `packages/frontend/**` or `packages/ui/**`, also run
@@ -51,7 +51,7 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 
 4. Check if tests exist:
    - Look for `*.test.ts` or `*.spec.ts` files related to this feature
-   - Check if `pnpm --filter @orm/backend test` is configured and works
+   - Check if `{{PKG_TEST}}` is configured and works
    - Check if Docker services are needed (postgres, redis, minio)
 
 5. If tests exist and can run:
@@ -68,7 +68,7 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 ## Test Results
 
 ### Typecheck
-{PASS/FAIL} — `pnpm --filter @orm/shared build && pnpm --filter @orm/backend typecheck`
+{PASS/FAIL} — `{{PKG_BUILD}} && {{PKG_TYPECHECK}}`
 
 ### Tests
 {PASS/FAIL/SKIPPED — no tests found for this feature}

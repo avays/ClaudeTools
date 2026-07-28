@@ -31,4 +31,4 @@ CREATE INDEX idx_table_name_tenant ON table_name(tenant_id);
    - Define the table interface with snake_case columns
    - Add to the `Database` interface
 
-5. Verify: `pnpm --filter @orm/backend typecheck`
+5. Verify: `{{PKG_TYPECHECK}}`

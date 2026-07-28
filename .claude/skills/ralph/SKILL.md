@@ -5,6 +5,12 @@ user_invocable: true
 argument-hint: "[drain | audit --issue N --pr M --passes K] [--dry-run] [--no-worktree]"
 ---
 
+<!-- host-specific: the tracker/host commands shown below are worked examples from
+     one setup. Your configured equivalents live in the profile you installed with (profiles/<name>.env)
+     (TRACKER_* / VCS_* tokens) — the CONTRACT each step implements is what
+     ports; the exact invocation is not. -->
+
+
 # Ralph Loop Runner
 
 Ralph runs headless Claude in a loop against either the project board (drain mode) or a single issue/PR (audit mode). The driver script is `scripts/ralph.sh` — this skill documents common invocations and chooses safe defaults.
@@ -47,14 +53,14 @@ Ralph writes to `./ralph.log` (configurable via `--log`). The log is `*.log` so 
 - Tool descriptions (what Claude is doing inside each iteration): `tail -c 50000 ralph.log | grep -oE '"description":"[^"]{10,120}"' | tail -20`
 - Audit findings produced by the run, both files per pass:
   - `.ai/audit-findings/issue-ID-pass-K.md` — architectural auditor (Sonnet)
-  - `.ai/audit-findings/issue-ID-pass-K-line.md` — line-reviewer (Opus, Copilot-style)
+  - `.ai/audit-findings/issue-ID-pass-K-line.md` — line-reviewer (Opus, {{VOCAB_REVIEWER}}-style)
   - Both persist across worktree cleanup.
 
 ## How audit mode works under the hood
 
-Each audit pass runs **two reviewers in series** — the architectural auditor and the line-reviewer — and the pass is only considered clean when **both** report no findings. This is the structural fix for the "Copilot finds nits Ralph misses" gap: the auditor (Sonnet, broad context, 5 dimensions) catches spec/architecture issues; the line-reviewer (Opus, diff-anchored, deliberately noisy) catches line-level nits. Together they cover what Copilot would flag in a typical PR review.
+Each audit pass runs **two reviewers in series** — the architectural auditor and the line-reviewer — and the pass is only considered clean when **both** report no findings. This is the structural fix for the "{{VOCAB_REVIEWER}} finds nits Ralph misses" gap: the auditor (Sonnet, broad context, 5 dimensions) catches spec/architecture issues; the line-reviewer (Opus, diff-anchored, deliberately noisy) catches line-level nits. Together they cover what {{VOCAB_REVIEWER}} would flag in a typical PR review.
 
-1. Resolve target branch from `--branch X` or `--pr M` (the latter via `gh pr view M --json headRefName`). One or the other is **required** unless `--no-worktree` is passed.
+1. Resolve target branch from `--branch X` or `--pr M` (the latter via `{{VCS_VIEW_PR}}`). One or the other is **required** unless `--no-worktree` is passed.
 2. `git fetch origin <branch>`, then `git worktree add .claude/worktrees/ralph-<issue>-<pid> <branch>`. Fails fast if the branch is already checked out in another worktree.
 3. `cd` into the worktree. Run N audit passes interleaved with (N-1) fix passes.
 4. **Each audit pass = auditor run, then line-reviewer run.** Findings go to two files per pass:
@@ -80,14 +86,14 @@ The operator's obligation after any Ralph audit run:
 
 None of these substitute for a clean pass: a high pass count, findings trending down across passes, non-trivial-looking fixes, or your own manual verification of a fix. The loop closes on a reviewer pass that finds nothing, and nothing else.
 
-**When you drive the loop by hand** (spawning the `auditor` + `line-reviewer` agents directly instead of `scripts/ralph.sh`, per `.claude/rules/workflow.md`), the same rule is unconditional: after fixing a pass's findings, spawn one more pass, and keep going until a pass returns zero findings. If the last thing you did was *fix something* rather than *run an audit that came back clean*, you are not done — run another pass. Budget for that final confirming pass up front; it is the most commonly skipped step.
+**When you drive the loop by hand** (spawning the `auditor` + `line-reviewer` agents directly instead of `scripts/ralph.sh`, per `{{PATHS_RULES_DIR}}/workflow.md`), the same rule is unconditional: after fixing a pass's findings, spawn one more pass, and keep going until a pass returns zero findings. If the last thing you did was *fix something* rather than *run an audit that came back clean*, you are not done — run another pass. Budget for that final confirming pass up front; it is the most commonly skipped step.
 
 For an unattended run, prefer a higher `--audit-passes` (3+) to reduce the chance of terminating mid-findings, and always verify the last pass is clean before trusting the result. If you need a hard guarantee of convergence, re-invoke Ralph until a whole run short-circuits clean on its *first* pass — that is the unambiguous signal that the branch has nothing left to fix.
 
 ## How drain mode works under the hood
 
 1. GraphQL query against `organization(login:Digital-Synchrony).projectV2(number:1)` returns all items with status + labels.
-2. Filter: OPEN issues in a `Ready for *` status without any `agent:*` label (agent labels mean the GitHub Actions workflow is already processing the issue).
+2. Filter: OPEN issues in a `Ready for *` status without any `agent:*` label (agent labels mean the CI workflow is already processing the issue).
 3. Walk statuses in drain order — `Ready for Context` → `Ready for Refinement` — take the first match. This finishes near-done work before starting new.
 4. Invoke `claude -p "/board N"` — the `/board` skill handles the worktree for its sub-agents.
 5. Sleep, loop. Stuck-issue detector: same issue picked 3× consecutively → long backoff to avoid burning budget on a wedged ticket.

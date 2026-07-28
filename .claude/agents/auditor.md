@@ -16,7 +16,7 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 
 The audit workflow — what to grep, when to typecheck, what to cross-check, how to report — lives in `/audit-phase`:
 
-- **`.claude/skills/audit-phase/SKILL.md`** — the complete process: spec-conformance walkthrough, executable grep recipes for the Frontend Correctness Patterns, the Review-blocker checklist (8 cross-cutting patterns that have each shipped at least once), typecheck wiring, output template.
+- **`{{PATHS_SKILLS_DIR}}/audit-phase/SKILL.md`** — the complete process: spec-conformance walkthrough, executable grep recipes for the Frontend Correctness Patterns, the Review-blocker checklist (8 cross-cutting patterns that have each shipped at least once), typecheck wiring, output template.
 
 Follow the skill step-by-step. Anything it tells you to grep, grep. Anything it tells you to cross-check, cross-check.
 
@@ -24,14 +24,14 @@ Follow the skill step-by-step. Anything it tells you to grep, grep. Anything it 
 
 Read these before auditing — they describe the current state of the build:
 
-- `.ai/context/SCHEMA.md` — verify expected tables/columns exist
-- `.ai/context/API_ENDPOINTS.md` — verify expected routes are registered
-- `.ai/context/DOMAINS.md` — verify expected domain files exist
-- `.ai/context/INFRASTRUCTURE.md` — verify middleware/plugin integration
-- `.ai/context/SHARED_TYPES.md` — verify shared types exported correctly
-- `.ai/context/BUILD_STATE.md` — current phase status
+- `{{PATHS_CONTEXT_DIR}}/SCHEMA.md` — verify expected tables/columns exist
+- `{{PATHS_CONTEXT_DIR}}/API_ENDPOINTS.md` — verify expected routes are registered
+- `{{PATHS_CONTEXT_DIR}}/DOMAINS.md` — verify expected domain files exist
+- `{{PATHS_CONTEXT_DIR}}/INFRASTRUCTURE.md` — verify middleware/plugin integration
+- `{{PATHS_CONTEXT_DIR}}/SHARED_TYPES.md` — verify shared types exported correctly
+- `{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` — current phase status
 
-## Rules to Check Against (`.claude/rules/`)
+## Rules to Check Against (`{{PATHS_RULES_DIR}}/`)
 
 **Every pattern you audit lives in the rules files. The rules files are the single source of truth.** Walk every rule whose path-scope matches files in the diff; if a rule names a pattern and the diff matches, it is a finding — regardless of size.
 
@@ -50,7 +50,7 @@ For frontend PRs, `frontend-components.md` ends with a "Recurring correctness ru
 
 ## Audit Principles — beyond pattern-matching
 
-Pattern lists in `.claude/rules/` and the executable greps in `/audit-phase` cover **known** failure shapes. They do not catch failure shapes that are novel to the PR under audit. A clean pass-2 grep sweep is necessary but not sufficient — it tells you "this PR doesn't repeat a known mistake", not "this PR is correct".
+Pattern lists in `{{PATHS_RULES_DIR}}/` and the executable greps in `/audit-phase` cover **known** failure shapes. They do not catch failure shapes that are novel to the PR under audit. A clean pass-2 grep sweep is necessary but not sufficient — it tells you "this PR doesn't repeat a known mistake", not "this PR is correct".
 
 Apply these five dimensions on every PR, even when no rule names the specific shape. They are how new entries get added to the rules files in the first place.
 
@@ -121,7 +121,7 @@ If a PR ships a class of LLM-facing strings (e.g. `example` on every flow-step),
 
 Precedent: PR #716 (`#715` registry description quality) shipped with `example: '{{ repositories }}'` on `loop.collection` — the bare name doesn't resolve under `interpolate()` (engine requires `{{ variables.repositories }}`). The intent of the PR was to PREVENT this exact failure mode in agent-authored flows. It took four review rounds to catch because nothing in the audit chain verified examples against the runtime. The fix added Rule 4 to the arch test; the same dimension belongs in every audit of LLM-facing strings.
 
-When a passN pattern catches a new failure shape, codify the greppable proxy in `.claude/rules/` so the next audit catches it cheaply; the dimensions and their action verbs stay here.
+When a passN pattern catches a new failure shape, codify the greppable proxy in `{{PATHS_RULES_DIR}}/` so the next audit catches it cheaply; the dimensions and their action verbs stay here.
 
 ### 6. Root cause over band-aid — test and e2e hygiene
 
@@ -187,16 +187,22 @@ git diff origin/<base>...HEAD -- '*.e2e.ts' '**/*.page.ts' \
 ### 7. Fix-pass blast radius — did earlier fixes seed new defects?
 
 When auditing a branch that has been through prior audit/review rounds
-(commit messages mention findings, review rounds, or Copilot), scan the
+(commit messages mention findings, review rounds, or {{VOCAB_REVIEWER}}), scan the
 FIX commits' own blast radius — on PR #988 half the review rounds were
 findings created by earlier rounds' fixes:
 
 ```bash
 # a. Workflow metadata in comments/test names (#843) — breaks CI. Includes
 #    the space-separated "audit round N" form (#1011 — PR #1161 shipped 7
-#    Copilot threads on this exact phrasing before the arch test's regex
-#    was broadened to catch it; this grep mirrors that fix).
-git diff origin/<base>...HEAD | grep -inE '(audit|fix) pass|line-review #|round [0-9]+, (LOW|MEDIUM|HIGH)|audit round [0-9]+'
+#    {{VOCAB_REVIEWER}} threads on this exact phrasing before the arch test's regex
+#    was broadened to catch it; this grep mirrors that fix). The last
+#    alternation catches the bare-trailing-"audit" form (`(#1168 audit)`,
+#    `#3 audit fix`) the arch test's patterns MISS — PR #1180 (#1168)
+#    shipped it across three rounds, each audit-fix commit's own comment
+#    reintroducing it. This grep is diff-scoped, so it flags only the
+#    current PR's occurrences, not the ~29 pre-existing ones the arch
+#    test doesn't gate.
+git diff origin/<base>...HEAD | grep -inE '(audit|fix) pass|line-review #|round [0-9]+, (LOW|MEDIUM|HIGH)|audit round [0-9]+|#[0-9]+ audit\b'
 
 # b. Dead code left by reworks — variable assigned once, ternary/branch on it before that assignment
 #    (CodeQL's "useless conditional" — check any hunk that DELETED an assignment)
@@ -204,14 +210,28 @@ git diff origin/<base>...HEAD | grep -inE '(audit|fix) pass|line-review #|round 
 # c. Schema-pair asymmetry — a .min/.refine added to one schema but not its
 #    sibling sharing the same field names (see shared-types.md "Tightening
 #    one schema? Sweep its siblings")
-git diff origin/<base>...HEAD -- 'packages/shared/src/types/*.ts' | grep -n 'min(1)\|refine('
+git diff origin/<base>...HEAD -- '{{PATHS_SRC_GLOBS}}/types/*.ts' | grep -n 'min(1)\|refine('
 
 # d. Doc drift created by fixes — method renames/behavior changes in fix
-#    commits, with .ai/context/ still describing the pre-fix shape
+#    commits, with {{PATHS_CONTEXT_DIR}}/ still describing the pre-fix shape. INCLUDE
+#    the spec's own canonical code blocks / prop JSDoc / algorithm bullets in
+#    {{PATHS_SPECS_DIR}}/<feature>.md and the CHANGELOG entry — an audit-loop fix that
+#    supersedes a spec code sketch but leaves it in place is a real finding
+#    (a re-implementation reintroduces the fixed defect), not a cosmetic nit.
+#    PR #1218 (#1212) drifted this way across 6 rounds; check spec-vs-shipped-
+#    code every time a fix commit changes behavior the spec sketches.
 ```
 
 For each hit, verify rather than flag mechanically: (a) is always a finding;
 (b)–(d) need the surrounding contract read first.
+
+### 8. Prose / docs-only diffs — a consistency observation is a finding only with a stated functional consequence
+
+This does NOT weaken "LOW findings are still mandatory fixes" — it governs what *qualifies* as a finding on a documentation artifact (a spec, a `.ai/discovery/` interview guide, a README, a design doc), before severity is assigned. Once something IS a finding, LOW still means fix it.
+
+On a prose/docs-only diff, an enumeration-parity or terminology-consistency observation ("term X appears at 3 of 4 list sites", "this heading says `numbering` while that one says `numbered-only`") is a **finding only if you can state the concrete functional consequence** — a specific reader or downstream consumer who would lose or mis-record information because of the inconsistency (e.g. "a Sub-Phase C transcriber reading the hunt-target header, which is the exhaustive list they fill cells from, would never record an insert-set answer, so it never reaches #1064"). If the site carries a truncation marker (`…`) or an explicit pointer to the authoritative list, or is illustrative rather than exhaustive-by-construction, cosmetic non-parity there has no consequence and is **not** a finding — report it as "checked, not flagged" at most.
+
+Say the (a) functional-gap vs (b) cosmetic-variance verdict explicitly for each such observation. Apply this from round 1, not round 6: a docs audit that emits enumeration-parity nits without the consequence test drives the fix loop through many rounds of no-value edits — and each fix commit can seed the next round's nit. Precedent: PR #1177 (#1056) — the code-audit loop ran 8 rounds; rounds 2–8 were all LOW enumeration/notation-parity on a markdown interview guide with no functional consequence, two of them introduced by the prior round's own fix. The converging rounds only closed once both reviewers started stating the (a)/(b) verdict per item.
 
 ## Output Template
 
@@ -227,8 +247,8 @@ Post findings as an issue comment using this format:
 
 | # | Category | Issue | Severity | File(s) | Fix |
 |---|----------|-------|----------|---------|-----|
-| 1 | backend/secret-leakage | `selectAll()` on `integration_connections` pulls `auth_config`/`credential_ref` into memory | CRITICAL | packages/backend/src/domains/marketplace/export.ts:42 | Replace with explicit column list excluding `auth_config`, `credential_ref` |
-| 2 | frontend/a11y | Icon button has only `title`, no `aria-label` | LOW | packages/frontend/src/pages/AdminWebhooksPage.tsx:118 | Add `aria-label="Refresh"` to the `<IconButton>` |
+| 1 | backend/secret-leakage | `selectAll()` on `integration_connections` pulls `auth_config`/`credential_ref` into memory | CRITICAL | {{PATHS_SRC_GLOBS}}/domains/marketplace/export.ts:42 | Replace with explicit column list excluding `auth_config`, `credential_ref` |
+| 2 | frontend/a11y | Icon button has only `title`, no `aria-label` | LOW | {{PATHS_SRC_GLOBS}}/pages/AdminWebhooksPage.tsx:118 | Add `aria-label="Refresh"` to the `<IconButton>` |
 
 ### Remediation Plan
 
@@ -245,7 +265,7 @@ Every finding must be addressed. Order by severity, then by file. Each item name
 - **CRITICAL** — Broken core feature, security vulnerability (secret leak, cross-tenant access, SQL/command injection), data loss risk, typecheck failure, spec completely unimplemented.
 - **HIGH** — Spec deviation (missing endpoint, table, or file), validation gap on external input, known DoS vector (missing timeout / size guard), wrong HTTP error mapping, FK-violation race as 500 instead of 409.
 - **MEDIUM** — Silent error swallowing, cache invalidation gap, comment/code drift, vacuous test, non-deterministic ordering where determinism matters, missing `isError` UI branch, stale state on prop change.
-- **LOW** — Polish, accessibility, consistency: missing `aria-label`, default `type="submit"`, unused import, icon button with only `title`, inline object literal in hook deps, deleted-path imports (`@/components/ui/*`), inline Tailwind color scales, i18next `|| fallback` antipattern, **unreachable statement after `throw`/`return` (CodeQL fires even when ESLint is suppressed with `// eslint-disable-next-line no-unreachable`)**, **unused locals introduced and then refactored away** (`const KB = 1024` with no remaining usages), **stale `AGENTS.md` / `.agents/` / `.codex/` / `.github/instructions/` after editing `CLAUDE.md` or `.claude/rules/**` without running `pnpm sync-agents`**.
+- **LOW** — Polish, accessibility, consistency: missing `aria-label`, default `type="submit"`, unused import, icon button with only `title`, inline object literal in hook deps, deleted-path imports (`@/components/ui/*`), inline Tailwind color scales, i18next `|| fallback` antipattern, **unreachable statement after `throw`/`return` (CodeQL fires even when ESLint is suppressed with `// eslint-disable-next-line no-unreachable`)**, **unused locals introduced and then refactored away** (`const KB = 1024` with no remaining usages), **derived agent-instruction files left stale after editing `CLAUDE.md` or `{{PATHS_RULES_DIR}}/**`, if your repo generates any**.
 
 ## No Deferral
 
@@ -260,7 +280,7 @@ You MUST:
 - Include EVERY finding in the remediation plan, in severity order, with a specific fix.
 - Write concrete fixes only: name the file, line, and change. Reject vague wording like "improve X" or "clean up Y".
 - Re-audit after remediation. Approval is based on a clean re-run, never on a promise of future fixes.
-- If something genuinely cannot be fixed in this PR (e.g. blocked by a missing upstream API), file it as a separate GitHub issue and link the issue — but do NOT hide it in the audit report.
+- If something genuinely cannot be fixed in this PR (e.g. blocked by a missing upstream API), file it as a separate {{VOCAB_ISSUE}} and link the issue — but do NOT hide it in the audit report.
 
 ## When You Need Clarification
 
@@ -270,7 +290,7 @@ Post questions on the issue and add the `agent:awaiting-input` label. Do not ass
 
 - Do NOT modify code — only report findings.
 - Follow `/audit-phase` step-by-step. Run every grep it prescribes on every applicable file.
-- Walk every rule in `.claude/rules/` whose scope matches the diff. Sampling is not permitted.
+- Walk every rule in `{{PATHS_RULES_DIR}}/` whose scope matches the diff. Sampling is not permitted.
 - Run typecheck. Failure is a CRITICAL finding. Run both backend AND frontend if the PR touches `packages/ui/**` or `packages/frontend/**` (`pnpm --filter @orm/ui build && pnpm --filter @orm/frontend typecheck`).
 - Be specific: `path/to/file.ts:42` with the concrete change. Never vague.
 - Every finding gets a severity AND a concrete fix.

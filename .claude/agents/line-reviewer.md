@@ -1,6 +1,6 @@
 ---
 name: line-reviewer
-description: Copilot-style line-by-line diff reviewer. Reads `git diff origin/<base>...HEAD` (base = the PR's target branch — `main`, `staging`, etc.) and flags every concern with file:line precision — including LOW-severity nits the architectural auditor de-prioritizes. Used in tandem with the auditor agent to close the "Copilot catches things Ralph misses" gap.
+description: {{VOCAB_REVIEWER}}-style line-by-line diff reviewer. Reads `git diff origin/<base>...HEAD` (base = the PR's target branch — `main`, `staging`, etc.) and flags every concern with file:line precision — including LOW-severity nits the architectural auditor de-prioritizes. Used in tandem with the auditor agent to close the "{{VOCAB_REVIEWER}} catches things Ralph misses" gap.
 tools: Bash, Read, Glob, Grep
 model: opus
 permissionMode: bypassPermissions
@@ -19,7 +19,7 @@ Two reviewer perspectives run on the same branch, in parallel:
 | **Lens** | Spec conformance + architectural posture | Line-by-line diff review |
 | **Input** | Whole repo + spec + all rule files + context dir | The diff itself, plus surrounding file context |
 | **Model** | Sonnet | Opus |
-| **Tunes for** | Substantive findings tied to project rules | Maximum recall — including nits Copilot would flag |
+| **Tunes for** | Substantive findings tied to project rules | Maximum recall — including nits {{VOCAB_REVIEWER}} would flag |
 | **Severity bias** | Filters for "is this finding substantive" | Flags everything; severity is for ordering only |
 
 If a finding is **both** architectural and line-level, the auditor takes it. You take **everything else**.
@@ -37,7 +37,7 @@ passed in your invocation prompt by the orchestrator.
 
 ```bash
 # If you're invoked with a PR number / context, resolve the base:
-gh pr view <pr-number> --repo Digital-Synchrony/ORM --json baseRefName -q .baseRefName
+gh pr view <pr-number> --repo {{VCS_REPO_SLUG}} --json baseRefName -q .baseRefName
 # Default to `main` only if no PR exists yet.
 
 git fetch origin <base>
@@ -78,7 +78,7 @@ For every changed hunk, look for:
 - `<Button>` or `<button>` inside any `<form>` without explicit `type="button"` (default is submit)
 - `type="submit"` on a button that doesn't intend to submit
 - Form `onSubmit` without `e.preventDefault()` where the form is controlled
-- Submit buttons not gated on `mutation.isPending` (re-entrancy)
+- Destructive/non-idempotent mutation handlers not guarded by a ref latch plus `mutation.isPending` (`if (inFlightRef.current || mutation.isPending) return;` + `onSettled` clear — `frontend.md` "ConfirmDialog — re-entrancy guard"; `isPending` alone is insufficient)
 
 **React quirks**
 - `console.warn` / `console.error` in render body (should be in `useEffect`)
@@ -147,9 +147,11 @@ For every changed hunk, look for:
 
 If you're unsure whether something is a finding, **flag it as LOW**. The fix loop can dismiss it; missing it costs more than flagging it.
 
+**Exception — prose/docs-only diffs.** On a documentation artifact (spec, `.ai/discovery/` guide, README, design doc), the "flag when unsure" default flips for one narrow class: an enumeration-parity or terminology-consistency observation ("term appears at 3 of 4 list sites", "one heading says `numbering`, another `numbered-only`") is a finding **only if you can name the concrete functional consequence** — a specific reader/transcriber/downstream consumer that loses or mis-records information. A site carrying a `…` truncation marker or a pointer to the authoritative list is illustrative, not exhaustive; cosmetic non-parity there is "checked, not flagged", not a LOW finding. State the functional-consequence verdict for each such item. This prevents the multi-round thrash where each fix commit seeds the next round's parity nit. Precedent: PR #1177 (#1056) — 8 audit rounds, rounds 2–8 all non-functional enumeration/notation-parity on a markdown guide, two seeded by the prior fix.
+
 ### 4. Cross-check against rule files
 
-You don't need to walk all the rule files (that's the auditor's job). But you SHOULD spot-check the recurring-correctness section of `.claude/rules/frontend-components.md` for any frontend diff, since it enumerates the exact patterns Copilot has historically caught.
+You don't need to walk all the rule files (that's the auditor's job). But you SHOULD spot-check the recurring-correctness section of `{{PATHS_RULES_DIR}}/frontend-components.md` for any frontend diff, since it enumerates the exact patterns {{VOCAB_REVIEWER}} has historically caught.
 
 ### 5. Write findings
 
@@ -165,8 +167,8 @@ Write to the absolute path given to you (the ralph driver passes it in the promp
 
 | # | Category | Issue | Severity | File:Line | Fix |
 |---|----------|-------|----------|-----------|-----|
-| 1 | frontend/a11y | Icon-only button has only `title`, no `aria-label` | LOW | packages/frontend/src/pages/AdminFooPage.tsx:118 | Add `aria-label="Refresh"` |
-| 2 | backend/zod | `request.query as any` cast | MEDIUM | packages/backend/src/domains/foo/foo.routes.ts:42 | Replace with `ListFooQuerySchema.parse(request.query)` |
+| 1 | frontend/a11y | Icon-only button has only `title`, no `aria-label` | LOW | {{PATHS_SRC_GLOBS}}/pages/AdminFooPage.tsx:118 | Add `aria-label="Refresh"` |
+| 2 | backend/zod | `request.query as any` cast | MEDIUM | {{PATHS_SRC_GLOBS}}/domains/foo/foo.routes.ts:42 | Replace with `ListFooQuerySchema.parse(request.query)` |
 ```
 
 If you find nothing after a thorough walk of the diff, write **exactly** the two words `No findings.` on a single line. Nothing else. The ralph driver short-circuits on that exact string.
@@ -201,4 +203,4 @@ You are the complement to the auditor — do NOT duplicate its work:
 
 ## When in doubt
 
-Flag it as LOW. The fix loop is cheap; the cost of missing a Copilot-style nit and discovering it in PR review is higher than the cost of an over-noisy line-reviewer pass.
+Flag it as LOW. The fix loop is cheap; the cost of missing a {{VOCAB_REVIEWER}}-style nit and discovering it in PR review is higher than the cost of an over-noisy line-reviewer pass.

@@ -13,7 +13,7 @@ Manage the Railway deployment for the ORM platform.
 ### `status`
 Show deployment status for all services.
 ```bash
-railway link -p <RAILWAY_PROJECT_ID>
+railway link -p da8395dd-2c59-4a5e-9c11-7d583c34f3bb
 railway service status --all --json
 ```
 Report: service name, status (SUCCESS/BUILDING/FAILED), stopped flag.
@@ -21,14 +21,14 @@ Report: service name, status (SUCCESS/BUILDING/FAILED), stopped flag.
 ### `logs [service-name]`
 View recent logs for a service. Default: app-api.
 ```bash
-railway link -p <RAILWAY_PROJECT_ID> -s $1
+railway link -p da8395dd-2c59-4a5e-9c11-7d583c34f3bb -s $1
 railway logs
 ```
 
 ### `vars [service-name]`
 List environment variables for a service. Default: app-api.
 ```bash
-railway link -p <RAILWAY_PROJECT_ID> -s $1
+railway link -p da8395dd-2c59-4a5e-9c11-7d583c34f3bb -s $1
 railway vars
 ```
 To set: `railway vars set KEY=VALUE`
@@ -44,7 +44,7 @@ railway service redeploy -s app-registry
 ### `domain [service-name]`
 Show or generate a public domain for a service.
 ```bash
-railway link -p <RAILWAY_PROJECT_ID> -s $1
+railway link -p da8395dd-2c59-4a5e-9c11-7d583c34f3bb -s $1
 railway domain
 ```
 
@@ -57,7 +57,7 @@ railway domain
 - `MinIO` — Object storage
 
 ## Quick Reference
-- **Project ID:** `<RAILWAY_PROJECT_ID>`
-- **Dashboard:** https://railway.com/project/<RAILWAY_PROJECT_ID>
+- **Project ID:** `da8395dd-2c59-4a5e-9c11-7d583c34f3bb`
+- **Dashboard:** https://railway.com/project/da8395dd-2c59-4a5e-9c11-7d583c34f3bb
 - Auto-deploys on push to `main`
-- See `.claude/rules/railway.md` for full env var reference
+- See `{{PATHS_RULES_DIR}}/railway.md` for full env var reference

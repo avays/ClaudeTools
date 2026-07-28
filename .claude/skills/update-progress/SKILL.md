@@ -6,24 +6,30 @@ description: Update project progress — overwrite CLAUDE.md Current Focus, appe
 # Update Progress
 
 **CLAUDE.md is a lean index/loader.** It must not grow. Per-feature history
-lives in `.ai/context/CHANGELOG.md`; the phase + feature status table lives in
-`.ai/context/BUILD_STATE.md`. This skill enforces that separation.
+lives in `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md`; the phase + feature status table lives in
+`{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md`. This skill enforces that separation.
 
 ## Hard rules
 
-1. **CLAUDE.md `## Current Focus` is exactly one short line, and you must
-   OVERWRITE it.** Never append. Never add extra lines. After this skill
-   runs, `grep -c "Current focus\|Current Focus" CLAUDE.md` should return
-   2 at most (the `## Current Focus` header + the `/update-progress` skill
-   reference in Available Skills).
+1. **CLAUDE.md `## Current Focus` is exactly one short line — a SINGLE
+   sentence — and you must OVERWRITE it.** Never append. Never add extra
+   lines. "One short line" means one sentence, not two-or-three sentences
+   packed onto one physical line: push any re-sequencing history, rationale,
+   or per-issue detail to `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md` / `BUILD_STATE.md`, and
+   leave only the active-issue pointer here. After this skill runs,
+   `grep -c "Current focus\|Current Focus" CLAUDE.md` should return 2 at most
+   (the `## Current Focus` header + the `/update-progress` skill reference in
+   Available Skills). Precedent: PR #1216 (#1210) Copilot round 1 — the
+   Current Focus line was flagged for being two long sentences with detail
+   that belonged in CHANGELOG/BUILD_STATE.
 
-2. **Per-feature history goes to `.ai/context/CHANGELOG.md`.** Append a new
+2. **Per-feature history goes to `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md`.** Append a new
    bullet under the appropriate thematic heading (Core Phases, Backlog &
    Remediation, Frontend, Backend DRY & Refactoring, Advanced Features,
    Integrations, Docker & Infrastructure, Testing, Super Admin & Agent
    Platform, etc.). If no heading fits, add a new one at the bottom.
 
-3. **`.ai/context/BUILD_STATE.md` gets phase/feature table rows + key count
+3. **`{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` gets phase/feature table rows + key count
    updates.** Append a row to the phase status table with issue number (if
    any), feature name, DONE/IN PROGRESS, migration numbers, and domains
    touched. Refresh the "Key Counts" section if counts changed (migrations,
@@ -37,12 +43,34 @@ lives in `.ai/context/CHANGELOG.md`; the phase + feature status table lives in
    "BullMQ automation" or "AI agent platform"). Feature additions don't
    count.
 
+6. **`BUILD_STATE.md`'s "Last updated" line follows the SAME one-short-line,
+   no-history discipline as CLAUDE.md's Current Focus (Rule 1).** It is a
+   short pointer to the current update — not a running log with "Previously
+   …" segments or a label/status assertion. Detail belongs in `CHANGELOG.md`.
+   Precedent: PR #1227 (#1191) Copilot round 1 — the "Last updated" line had
+   grown into a long history-carrying sentence duplicating CHANGELOG. Recurred
+   PR #1235 (#1184) Copilot round 1 — the line had accumulated a "Previously …"
+   segment plus detailed narrative; the fix that stuck also added this
+   discipline to `{{PATHS_AGENTS_DIR}}/context-updater.md` (the agent that actually
+   writes the line), since that agent's BUILD_STATE.md step previously only
+   said "update counts and phase status."
+
+7. **Never assert a mutable `agent:*` label or board-status inside a context
+   doc** (`CLAUDE.md`, `BUILD_STATE.md`, `CHANGELOG.md`, `DEFERRED_ITEMS.md`).
+   A doc stating "the issue stays labeled `agent:awaiting-input`" (or any
+   `agent:speccing` / board-column claim) goes stale the moment the label
+   changes — and it changes constantly during the pipeline. State the fact
+   without the label claim, or point at the issue number and let the live
+   issue own its label state. Precedent: PR #1227 (#1191) Copilot rounds 1–3
+   — three separate context docs each asserted an `agent:awaiting-input`
+   label that wasn't actually on #1191.
+
 ## Steps
 
 1. **Read the current state**:
    - `CLAUDE.md` (confirm it's still the lean index format)
-   - `.ai/context/BUILD_STATE.md` (current phase table + key counts)
-   - `.ai/context/CHANGELOG.md` (existing thematic headings)
+   - `{{PATHS_CONTEXT_DIR}}/BUILD_STATE.md` (current phase table + key counts)
+   - `{{PATHS_CONTEXT_DIR}}/CHANGELOG.md` (existing thematic headings)
 
 2. **Verify no drift in CLAUDE.md**:
    - `wc -l CLAUDE.md` should be roughly ≤ 180 lines. If it's much bigger,
@@ -59,7 +87,7 @@ lives in `.ai/context/CHANGELOG.md`; the phase + feature status table lives in
      numbers, no stacked-on/merge-status narrative. Those go stale the
      moment a PR merges or retargets and belong in `CHANGELOG.md`.
      (PR #988 burned two Copilot review rounds on this line alone.)
-   - After ANY edit to CLAUDE.md, run `pnpm sync-agents` and stage the
+   - After ANY edit to CLAUDE.md, run ` ` and stage the
      regenerated files (`AGENTS.md .agents/ .codex/ .github/`) in the same
      commit — the `agent-instructions-sync` CI job fails on staleness.
 
@@ -77,7 +105,7 @@ lives in `.ai/context/CHANGELOG.md`; the phase + feature status table lives in
      domains, tables, API endpoints, skills, agents, field types, flow
      steps, custom action types, etc.).
 
-6. **Run `/update-context`** to refresh `.ai/context/*.md` files for any
+6. **Run `/update-context`** to refresh `{{PATHS_CONTEXT_DIR}}/*.md` files for any
    subsystem that was touched (schema, API endpoints, domains,
    infrastructure, automation, AI_AGENTS, integrations, frontend).
 
@@ -91,7 +119,7 @@ lives in `.ai/context/CHANGELOG.md`; the phase + feature status table lives in
   every feature (those belong in `CHANGELOG.md`).
 - Expanding "Key Architecture" from one-liners back into multi-sentence
   paragraphs.
-- Copying architectural details from `.claude/rules/` back into CLAUDE.md.
+- Copying architectural details from `{{PATHS_RULES_DIR}}/` back into CLAUDE.md.
 
 If any of these happen, revert the problematic additions: move appended
 content out of `CLAUDE.md` back into `CHANGELOG.md` or `BUILD_STATE.md`
