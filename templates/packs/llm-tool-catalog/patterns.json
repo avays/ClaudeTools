@@ -1,5 +1,0 @@
-{
-  "architecture-principles": "**",
-  "agent-skills": "{{PATHS_SRC_GLOBS}}/**/*.routes.ts,{{PATHS_SRC_GLOBS}}/**/tool-catalog/**",
-  "registry": "{{PATHS_SRC_GLOBS}}/**/registry.ts,{{PATHS_SRC_GLOBS}}/**/definitions/**"
-}

@@ -1,188 +1,151 @@
 # ClaudeTools
 
-A portable Claude Code toolchain: the agent pipeline (spec → implement →
-audit-loop → PR), path-scoped coding rules, and — the part that actually
-matters over time — **a governance system that stops agent context from
-rotting.**
+Claude Code agent tooling — rules, skills, agents, and the scripts that keep
+them from rotting. Copy into a repo, run `setup.sh`, done.
 
-Install it into any repo, on any tracker. Nothing here assumes GitHub, Node,
-or a particular stack.
+Placeholders make it tracker-agnostic: GitHub Issues, JIRA, or nothing.
 
 ```bash
 git clone https://github.com/avays/ClaudeTools
-cd ClaudeTools
-./bin/ct init   --target ../my-repo     # interactive; writes claudetools.config.json
-./bin/ct render --target ../my-repo     # renders .claude/, scripts/, CI
-./bin/ct check  --target ../my-repo     # verifies the result
+./ClaudeTools/setup.sh --target . --profile github --slug acme/platform --pkg pnpm --src src
 ```
 
-## Why the governance system is the point
+That copies `.claude/` and `scripts/` into your repo, substitutes the
+placeholders for your tracker's real commands, and generates the two files that
+must be computed rather than shipped.
 
-Agent rule files rot in a specific, predictable way: every review cycle adds a
-lesson, nothing ever removes one, and eighteen months later the "conventions"
-are 400 KB that no longer fit in a review prompt. Then someone does a cleanup
-pass and silently deletes hard-won knowledge to get the size down.
+## Layout
 
-Three scripts close both failure modes:
+```
+.claude/rules/     18 path-scoped convention files
+.claude/skills/    19 workflow skills (/create-spec, /audit-phase, /learn, /ship, ...)
+.claude/agents/    10 agent definitions (spec-writer, developer, auditor, ...)
+.claude/workflows/ ship.js — the deterministic multi-agent pipeline
+scripts/           the governance gates, ralph.sh, sync-agent-instructions.mjs
+profiles/          github.env | jira.env | none.env — the placeholder values
+setup.sh           copy + substitute
+```
+
+Rules you don't want are just files. Delete them.
+
+## setup.sh
+
+```
+--target  <dir>    repo to install into (required)
+--profile <name>   github | jira | none          (default: github)
+--slug    <o/n>    repo slug, e.g. acme/platform
+--name    <str>    project name
+--branch  <str>    main branch                    (default: main)
+--src     <globs>  first-party source globs       (default: src)
+--pkg     <mgr>    pnpm|npm|yarn|bun|none         (default: npm)
+--force            overwrite existing files
+--dry-run          show what would happen
+```
+
+It's `sed` and `cp`. The installed files contain your real commands — no
+runtime indirection to debug.
+
+Two files it **generates** rather than copies, because shipping them would be
+wrong:
+
+- **`rule-budgets.json`** — caps are byte counts and substitution changes byte
+  counts, so they're computed from what actually landed (+15%).
+- **`file-patterns.json`** — every rule `"**"` by default; narrow the globs for
+  stack-specific ones afterwards. A rule with no entry is never loaded.
+
+Then commit and run `scripts/build-frozen-headings.sh` — it reads tracked
+files, so it needs one commit first.
+
+## The governance scripts
+
+The reason this exists as a repo rather than a gist. Agent rule files rot
+predictably: every review cycle adds a lesson, nothing removes one, and
+eventually the conventions are 400 KB that no longer fit a review prompt — at
+which point someone "cleans up" and silently deletes hard-won knowledge.
 
 | Script | Stops |
 |---|---|
-| `check-rule-budget.sh` | **Regrowth.** Per-file byte caps plus a directory total, with the invariant `totalCap == sum(files)` enforced so the two can't disagree. Over budget means compress an existing lesson, not grow the file. |
-| `check-rule-preservation.sh` | **Silent fact loss.** On any rule file that SHRANK, diffs precedent references, command content, frozen headings, the operational-fact census, and modal density against the merge base. |
-| `build-frozen-headings.sh` | **Dangling citations.** Regenerates the list of headings cited by exact text elsewhere, so renaming one without updating its citers fails. |
+| `check-rule-budget.sh` | **Regrowth.** Per-file + directory byte caps, `totalCap == sum(files)` enforced so the two can't disagree. Over budget means compress an existing lesson, not raise the cap. |
+| `check-rule-preservation.sh` | **Silent fact loss.** On any rule file that *shrank*: diffs precedent refs, command content, frozen headings, the operational-fact census, and modal density against the merge base. |
+| `build-frozen-headings.sh` | **Dangling citations.** Regenerates the headings other files cite by exact text, so renaming one without updating its citers fails. |
 
-They work. Verified against a freshly rendered repo:
+Budgets alone cause the deletion problem; preservation alone permits the size
+problem. Together the only way to satisfy both is genuine compression.
+
+Verified against a fresh install:
 
 ```
-$ bash scripts/check-rule-budget.sh                          # after appending 40 KB
-OVER BUDGET: workflow is 69283 B > cap 17532 B — compress an existing lesson
+$ bash scripts/check-rule-budget.sh                          # after appending 30 KB
+OVER BUDGET: workflow is 55776 B > cap 17537 B — compress an existing lesson
 
 $ bash scripts/check-rule-preservation.sh workflow HEAD~1    # after deleting 35 lines
 LOST REFS: #1157 #843
-LOST FACTS: `.claude/agents/developer.md` `.claude/skills/learn/SKILL.md`
+LOST FACTS: `.claude/agents/developer.md`
 
 $ bash scripts/check-rule-preservation.sh workflow HEAD~1    # after a pure re-wrap
 OK: refs/cmds/facts preserved; headings preserved; fences 4->4; modals 26->26
 ```
 
-That last line is the hard part — the gate must not fire on a benign reflow, or
-it gets disabled within a week.
+That last line is the hard part — a gate that fires on a benign reflow gets
+disabled within a week, so `extract-rule-headings.sh` joins wrapped bullet
+leads before extracting to keep the keys wrap-independent.
 
-## How portability works
-
-Templates carry `{{TOKEN}}` placeholders; `ct render` substitutes them from
-your config. No runtime indirection, no wrapper scripts to debug — the rendered
-files contain your real commands.
-
-| Namespace | Examples |
-|---|---|
-| `TRACKER_*` | `VIEW_ISSUE`, `ADD_LABEL`, `LOCK_ACQUIRE`, `CLOSE_KEYWORD` |
-| `VCS_*` | `CREATE_PR`, `PR_CHECKS`, `RESOLVE_THREAD`, `DEFAULT_BASE` |
-| `VOCAB_*` | issue/ticket, PR/MR, board names |
-| `PKG_*` | build, typecheck, test, lint |
-| `PATHS_*` | rules, skills, specs, context, source globs |
-
-Conditional blocks handle capability differences:
+**Escape hatch** for a deliberate removal — a commit trailer on a commit
+touching the file:
 
 ```
-{{#if VCS_RESOLVE_THREAD}}...{{/if}}        # host supports thread resolution
-{{#if TRACKER_KIND=github}}...{{/if}}       # host-exact command block
-{{#if PACK:react-vite}}...{{/if}}           # pack is installed
+preservation-override: workflow — the BullMQ chain moved to a worked example
 ```
 
-A capability your host lacks doesn't render as a broken instruction — the
-section disappears.
+## The one thing that isn't mechanical: the lock
 
-### Trackers
+The pipeline runs agents in parallel on distinct issues. That rests entirely on
+the lock acquire being **atomic**.
 
-`github` (gh CLI), `jira` (jira CLI), `none` (markdown files + a lock
-directory). Adding one is a `profile.json`, not a code change.
+- **GitHub** — a label add is atomic server-side. Safe as written.
+- **`none`** — `mkdir` fails if the directory exists; the classic filesystem
+  compare-and-set. A `touch` lockfile is *not* atomic and must not be
+  substituted. Single machine only.
+- **JIRA** — a label edit is a read-modify-write on an array. Two agents can
+  both read an unlabelled ticket, both write their label, and **both believe
+  they hold the lock.** No error — just two agents racing on one branch.
 
-**Read the JIRA profile's notes before running parallel agents.** The pipeline's
-parallel-safety rests on an atomic lock acquire. GitHub labels are atomic;
-JIRA's label edit is a read-modify-write, so the profile routes the lock through
-the assignee field and documents the read-back verification you need. This is
-the one place where "swap the tracker" is not purely mechanical, and it is
-called out rather than papered over.
+`profiles/jira.env` routes the lock through the assignee field (single-valued,
+so the second write overwrites) and requires a **read-back** to learn whether
+you won. `setup.sh` prints the mechanism at the end, and `workflow.md` renders
+it inline, so nobody inherits GitHub's assumption silently.
 
-### Packs
+If you add a profile, work out which case your tracker is in first.
 
-Core installs everywhere. Stack-specific rules are opt-in:
+## Adding a tracker
 
-`node-ts` · `fastify-kysely-pg` · `sql-migrations` · `react-vite` ·
-`llm-tool-catalog` · `security-scanning` · `railway` · `docs-site`
-
-A Python repo on JIRA gets 3 rule files and the full pipeline. A TypeScript
-monorepo on GitHub gets 13.
-
-## What's in core
-
-**Rules** — `workflow.md` (the pipeline, the self-audit loop, agent locking,
-the sibling sweep, completeness traps), `testing-discipline.md` (what a test
-must actually prove; vacuous-assertion classes), `response-conventions.md`.
-
-**Skills** — `/create-spec`, `/audit-phase`, `/implement-phase`, `/learn`,
-`/ship`, `/board`, `/ralph`, `/get-issue`, `/cleanup`,
-`/resolve-review-feedback`, `/update-context`, `/update-progress`,
-`/manage-context`, `/generate-features`, `/tracker-issue`.
-
-**Agents** — spec-writer, developer, auditor, line-reviewer, board-runner,
-pr-creator, refinement, test-runner, context-updater, agent-manager.
-
-**Scripts** — the three governance scripts above, plus `ralph.sh` (headless
-drain loop) and `sync-agent-instructions.mjs` (derived Copilot/Codex variants).
-
-## Commands
-
-| | |
-|---|---|
-| `ct init` | Write a config (interactive, or `--yes` with flags) |
-| `ct render` | Render into a target; then generate budgets + file-patterns |
-| `ct check` | Verify a target — or `--templates` for this repo's own hygiene |
-| `ct diff` | Show what a re-render would change, without writing |
-| `ct extract --from <repo>` | Refresh templates from an upstream checkout |
-
-Two things `render` **generates** rather than copies, because copying them
-would be wrong:
-
-- **`rule-budgets.json`** — caps are byte counts, and substituting tokens
-  changes byte counts. Computed from what actually landed, +15%.
-- **`.frozen-headings.txt`** — depends on which packs you installed and on your
-  own source corpus. Built in-target after render. (It reads tracked files, so a
-  brand-new repo generates it on the run after the first commit; `ct check`
-  warns while it is absent.)
-
-## Keeping up with upstream
-
-`ct extract --from /path/to/upstream` re-tokenizes an upstream checkout into
-`templates/`. It is **read-only on the upstream** — never writes, branches, or
-stashes there.
-
-Three deliberate properties:
-
-1. An upstream file with no `templates/manifest.json` entry is a **failure**,
-   not a skip. New upstream content gets classified deliberately.
-2. Files marked `rewrite` stage under `templates/.staged/` instead of
-   overwriting — reverse substitution is lossy and those need human review.
-3. Command substitutions whose flags vary per call site are **reported, never
-   auto-applied**, with the specific loss named ("loses: --json field
-   selection").
-
-Nothing is auto-committed. The output is a diff for a human.
-
-## Development
+Copy a profile, fill in the command strings, done — no code changes.
 
 ```bash
-node tools/check.mjs --templates   # token/manifest hygiene of this repo
+cp profiles/github.env profiles/linear.env
+./setup.sh --target ../repo --profile linear --slug acme/app
 ```
 
-It catches three classes: a token used in a template but absent from the schema
-(would ship as literal `{{FOO}}`), a schema token no template uses (config
-surface that does nothing), and a template file no manifest entry points at.
-
-## Layout
-
-```
-bin/ct                        CLI
-tools/                        render, check, diff, extract, init, tokenize-commands
-claudetools.config.schema.json
-templates/
-  manifest.json               classification of every upstream file
-  core/                       rules, skills, agents, scripts, context skeleton, root doc
-  packs/<name>/               opt-in stack rules + patterns.json fragment
-  trackers/<kind>/profile.json
-  ci/<kind>/
-docs/examples/                worked examples too specific to genericise
-```
+`${ID}`, `${LABEL}`, `${BODY}`, `${TITLE}`, `${PR}`, `${THREAD}` stay literal —
+the agent fills them at call time. An **empty value means "this host can't do
+that"**; setup.sh lists the blanks so they're visible rather than silent.
 
 ## Provenance
 
 Extracted from a production multi-tenant SaaS platform. Rules cite the issue
-and PR numbers where each lesson was learned — those references are kept
-deliberately: a rule that says "PR #1196, three rounds, each fix reintroducing
-the bug" carries weight that "be careful with X" does not.
+and PR numbers where each lesson was learned — deliberately: "PR #1196, three
+rounds, each fix reintroducing the bug" carries weight that "be careful" does
+not.
 
-Where a file is too specific to genericise honestly, it ships as a labelled
-worked example (`packs/railway/rules/railway.md`,
-`docs/examples/completeness-chains-upstream.md`) rather than being watered down
-into advice.
+Some files are unapologetically specific — `railway.md` documents one real
+deployment, and its header says so. The pattern it teaches (every boot-gated
+var documented per-service, with a both-processes checklist) only lands when
+you can see it applied end to end.
+
+## Refreshing from upstream
+
+`.claude/` here is a tokenized copy of a live repo's. To pull newer content,
+copy the file across and re-apply the placeholders by hand — the substitution
+table is `profiles/*.env` plus the paths in `setup.sh`. There's deliberately no
+sync tool; the volume is low and reverse-substitution is lossy enough that a
+human should look at it.

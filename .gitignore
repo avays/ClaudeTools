@@ -1,5 +1,1 @@
 node_modules/
-
-# Staging area for files `ct extract` flags as needing editorial work before
-# they are trustworthy as templates. Transient by design — promote or discard.
-templates/.staged/

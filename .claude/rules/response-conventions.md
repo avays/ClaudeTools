@@ -15,7 +15,7 @@ The user should never have to ask "what's the PR link?" twice. Format, on
 its own trailing line:
 
 ```
-{{#if VCS_PR_URL_FORMAT}}{{VOCAB_PR}}: {{VCS_PR_URL_FORMAT}}{{/if}}{{#unless VCS_PR_URL_FORMAT}}{{VOCAB_PR}}: <paste the {{VOCAB_PR}} URL>{{/unless}}
+{{VOCAB_PR}}: {{VCS_PR_URL_FORMAT}}
 ```
 
 If there is no open PR (pre-spec discussion, post-merge cleanup,

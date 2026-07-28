@@ -1,1 +1,0 @@
-{ "security-scanning": ".github/workflows/**,*.toml,.trivyignore,.gitleaks.toml,.semgrepignore,.hadolint.yaml" }

@@ -164,9 +164,9 @@ You may be running in a **git worktree** — an isolated copy of the repo. If th
 
 The {{VOCAB_PR}} body references the {{VOCAB_ISSUE}} as `{{TRACKER_ISSUE_REF_FORMAT}}`; the announcing comment links to `{{TRACKER_ISSUE_URL}}`. Both forms matter: the first is what the tracker parses to create the structural link, the second is what a human clicks. A {{VOCAB_PR}} carrying only prose ("for the login bug") has neither.
 
-{{#if VCS_CREATE_DRAFT_PR}}Open as a draft when a review loop will iterate on it — drafts skip CI on many setups, so the loop does not burn a full pipeline run per round:
+Open as a draft when a review loop will iterate on it — drafts skip CI on many setups, so the loop does not burn a full pipeline run per round:
 
 ```bash
 {{VCS_CREATE_DRAFT_PR}}
 ```
-Mark it ready only once the loop has converged: `{{VCS_MARK_READY}}`.{{/if}}
+Mark it ready only once the loop has converged: `{{VCS_MARK_READY}}`.
